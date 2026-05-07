@@ -1,7 +1,7 @@
 # EduFlow — Project Context
 
 > **This is the single source of truth for the entire project.** Update it after every step.
-> Last updated: Phase 1 · Step 1 — Foundation scaffolded.
+> Last updated: Phase 1 · Step 2 — Prisma schema + seed complete.
 
 ---
 
@@ -153,9 +153,57 @@ src/features/<feature>/
 
 ## 5. Database Structure
 
-> _Schema is added in Phase 1 · Step 2._ Currently only the Prisma generator + datasource are wired up.
+Migration `20260507124246_init_lms_schema` applied to Neon on 2026-05-07.
 
-Planned core models: `User`, `Account`, `Session`, `VerificationToken` (Auth.js), `InstructorProfile`, `Category`, `Course`, `Chapter`, `Attachment`, `Enrollment`, `Progress`, `Review`, `Purchase`.
+### Enums
+
+| Enum | Values |
+|---|---|
+| `Role` | `STUDENT`, `INSTRUCTOR`, `ADMIN` |
+| `CourseStatus` | `DRAFT`, `PUBLISHED`, `ARCHIVED` |
+| `CourseLevel` | `BEGINNER`, `INTERMEDIATE`, `ADVANCED`, `ALL_LEVELS` |
+
+### Models
+
+| Model | Purpose | Key fields |
+|---|---|---|
+| `User` | Auth + platform identity | `id`, `email`, `role`, `hashedPassword?` |
+| `Account` | OAuth provider tokens (Auth.js) | `provider`, `providerAccountId` |
+| `Session` | Database sessions (Auth.js) | `sessionToken`, `expires` |
+| `VerificationToken` | Magic link / email verify (Auth.js) | `identifier`, `token`, `expires` |
+| `InstructorProfile` | One-to-one extension of User for instructors | `bio`, `headline`, `avatarUrl`, `totalStudents` |
+| `Category` | Course taxonomy | `name`, `slug`, `color` |
+| `Course` | Core course entity | `title`, `slug`, `price` (Decimal), `status`, `level`, `avgRating` |
+| `Chapter` | Ordered lesson within a course | `position`, `isPublished`, `isFree`, `videoDuration` |
+| `Attachment` | Downloadable files for a course | `name`, `url`, `fileSize`, `mimeType` |
+| `Enrollment` | Student ↔ Course access record | unique `[userId, courseId]` |
+| `Progress` | Per-chapter completion per student | `isCompleted`, unique `[userId, chapterId]` |
+| `Review` | 1–5 star rating + text, one per student per course | `rating`, `body` |
+| `Purchase` | Payment record (Stripe wired in Step 19) | `amount` (Decimal), `stripePaymentIntentId?` |
+
+### Key design decisions
+- **`Decimal` for prices** — avoids float rounding errors (e.g. $94.99 exact).
+- **CUID IDs** — URL-safe, globally unique, time-sortable.
+- **Auth.js field shapes respected** — `Account`, `Session`, `VerificationToken` match `@auth/prisma-adapter` exactly.
+- **`InstructorProfile` separate from `User`** — keeps `User` lightweight for students.
+- **Soft deletes via `CourseStatus.ARCHIVED`** — enrolled students never lose access history.
+- **`avgRating` denormalized** on `Course` — recalculated on review add/update/delete (server action). Keeps catalog queries fast without JOINs.
+- **`@db.Text`** for long prose fields (description, bio, chapter description) — avoids varchar(255) limits.
+
+### Seed data (run `npm run db:seed`)
+
+| Table | Count |
+|---|---|
+| Users | 10 (1 admin, 4 instructors, 5 students) |
+| Categories | 8 |
+| Courses | 12 (11 published, 1 draft) |
+| Chapters | 51 |
+| Attachments | 33 (3 per course) |
+| Enrollments | 15 |
+| Progress records | 11 |
+| Reviews | 8 |
+
+All demo accounts use password `password123`.
 
 ---
 
@@ -235,8 +283,8 @@ See `.env.example` for the full list. Validated in `src/lib/env.ts`.
 | Phase | Step | Title                                      | Status     |
 | ----- | ---- | ------------------------------------------ | ---------- |
 | 1     | 1    | Project foundation                         | ✅ done    |
-| 1     | 2    | Prisma schema + seed                       | ⏭ next    |
-| 1     | 3    | Auth.js (Google + credentials, roles)      | ⏳ pending |
+| 1     | 2    | Prisma schema + seed                       | ✅ done    |
+| 1     | 3    | Auth.js (Google + credentials, roles)      | ⏭ next    |
 | 2     | 4    | Public landing page                        | ⏳ pending |
 | 2     | 5    | Course browsing (search/filter/categories) | ⏳ pending |
 | 2     | 6    | Single course page                         | ⏳ pending |
@@ -287,12 +335,24 @@ After Step 1 close-out (2026-05-07):
 
 ---
 
-## 15. Pending Tasks (next up — Step 2)
+## 15. Completed Tasks (Phase 1 · Step 2)
 
-- ⏭ Design the full Prisma schema (User, Course, Chapter, Attachment, Enrollment, Progress, Review, Category, Purchase, InstructorProfile, Auth.js tables)
-- ⏭ Run first migration against Neon
-- ⏭ Write `prisma/seed.ts` with realistic demo data (instructors, categories, courses, chapters, attachments)
-- ⏭ Verify seeded data appears via Prisma Studio
+- ✅ Designed and validated full Prisma schema (13 models, 3 enums)
+- ✅ Applied migration `20260507124246_init_lms_schema` to Neon PostgreSQL 17.8
+- ✅ Regenerated Prisma client to `src/generated/prisma` with all new types
+- ✅ Wrote idempotent `prisma/seed.ts` — 12 courses, 51 chapters, 33 attachments, 15 enrollments, 11 progress records, 8 reviews
+- ✅ Verified all counts in Neon via Prisma query
+- ✅ Typecheck passes clean
+
+## 16. Pending Tasks (next up — Step 3)
+
+- ⏭ Configure Auth.js v5 with `@auth/prisma-adapter`
+- ⏭ Implement Credentials provider (email + bcrypt password)
+- ⏭ Implement Google OAuth provider
+- ⏭ Create login + register pages with RHF + Zod validation
+- ⏭ Set up middleware for route protection (`/dashboard/**`, `/teach/**`)
+- ⏭ Add role-based guards and session helpers
+- ⏭ Verify auth works end-to-end with seeded users
 
 ---
 

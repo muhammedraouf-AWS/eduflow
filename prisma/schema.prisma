@@ -1,5 +1,6 @@
-// EduFlow — Prisma schema
-// Single source of truth for the database. Models are added in Step 2.
+// EduFlow — Prisma Schema
+// This file is the single source of truth for the database structure.
+// All models, enums, indexes, and relations are defined here.
 // Docs: https://pris.ly/d/prisma-schema
 
 generator client {
@@ -9,4 +10,306 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  // URL is injected via prisma.config.ts (loads .env.local → .env)
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum Role {
+  STUDENT
+  INSTRUCTOR
+  ADMIN
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  ALL_LEVELS
+}
+
+// ============================================================
+// AUTH.JS v5 REQUIRED MODELS
+// These shapes are dictated by @auth/prisma-adapter.
+// Do not rename fields — the adapter queries by exact field name.
+// ============================================================
+
+model User {
+  id             String    @id @default(cuid())
+  name           String?
+  email          String    @unique
+  emailVerified  DateTime?
+  image          String?
+  // hashedPassword is null for OAuth-only accounts
+  hashedPassword String?
+  role           Role      @default(STUDENT)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Auth.js relations
+  accounts Account[]
+  sessions Session[]
+
+  // Platform relations
+  instructorProfile InstructorProfile?
+  enrollments       Enrollment[]
+  progress          Progress[]
+  reviews           Review[]
+  purchases         Purchase[]
+
+  @@index([email])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  // Token fields are long — use Text to avoid varchar(255) overflow
+  refresh_token String? @db.Text
+  access_token  String? @db.Text
+  id_token      String? @db.Text
+  expires_at    Int?
+  token_type    String?
+  scope         String?
+  session_state String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Auth.js email verification (magic links / password reset)
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============================================================
+// PLATFORM MODELS
+// ============================================================
+
+// One-to-one extension of User for instructors.
+// Separated from User so Student users stay lightweight.
+model InstructorProfile {
+  id            String  @id @default(cuid())
+  userId        String  @unique
+  bio           String? @db.Text
+  headline      String? // e.g. "Senior React Developer & Educator"
+  website       String?
+  twitter       String?
+  linkedin      String?
+  // Cloudinary public_id (full URL generated at render time via next-cloudinary)
+  avatarUrl     String?
+  totalStudents Int     @default(0)
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courses Course[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// Flat (no subcategories) for v1. Subcategories can be added later
+// by adding a self-relation (parentId + children[]).
+model Category {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  slug        String  @unique
+  description String?
+  // Hex or Tailwind color string used for UI accents
+  color       String?
+
+  courses Course[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Course {
+  id               String       @id @default(cuid())
+  title            String
+  // slug is generated server-side from title; unique for SEO URLs
+  slug             String       @unique
+  description      String?      @db.Text
+  shortDescription String?      // max ~160 chars for cards/meta
+  // Cloudinary public_id; full URL built at render time
+  thumbnailUrl     String?
+  // Decimal avoids float rounding errors (e.g. $94.99 stored as exact value)
+  price            Decimal?     @db.Decimal(10, 2)
+  status           CourseStatus @default(DRAFT)
+  level            CourseLevel  @default(ALL_LEVELS)
+  language         String       @default("English")
+  // Postgres text[] arrays — stored as JSON-like list
+  requirements     String[]
+  objectives       String[]
+  // Denormalized for fast catalog queries (recalculated on review add/remove)
+  avgRating        Float?
+  totalStudents    Int          @default(0)
+  publishedAt      DateTime?
+
+  categoryId   String?
+  instructorId String
+
+  category    Category?         @relation(fields: [categoryId], references: [id])
+  instructor  InstructorProfile @relation(fields: [instructorId], references: [id])
+  chapters    Chapter[]
+  attachments Attachment[]
+  enrollments Enrollment[]
+  reviews     Review[]
+  purchases   Purchase[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([instructorId])
+  @@index([status])
+  @@index([status, publishedAt])
+}
+
+model Chapter {
+  id            String  @id @default(cuid())
+  title         String
+  description   String? @db.Text
+  // Cloudinary public_id for the video asset
+  videoUrl      String?
+  // Duration in seconds; used to show "X hours of video content"
+  videoDuration Int?
+  // 1-based position for ordering (drag-and-drop reorders update this)
+  position      Int
+  isPublished   Boolean @default(false)
+  // Free preview chapters visible without enrollment
+  isFree        Boolean @default(false)
+
+  courseId String
+  course   Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress Progress[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseId])
+  @@index([courseId, position])
+}
+
+// Course-level downloadable files (source code, slides, PDFs, etc.)
+model Attachment {
+  id       String  @id @default(cuid())
+  name     String
+  // Cloudinary secure_url (files are not processed like images/video)
+  url      String
+  // bytes — displayed as "2.4 MB" in the UI
+  fileSize Int?
+  mimeType String?
+
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([courseId])
+}
+
+// Records that a student has access to a course.
+// Created after a free enroll (price = null) or after Purchase is confirmed.
+model Enrollment {
+  id       String @id @default(cuid())
+  userId   String
+  courseId String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+}
+
+// Per-chapter completion status for a student.
+// A course is "complete" when all published chapters have isCompleted = true.
+model Progress {
+  id          String  @id @default(cuid())
+  userId      String
+  chapterId   String
+  isCompleted Boolean @default(false)
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, chapterId])
+  @@index([userId])
+  @@index([chapterId])
+}
+
+// One review per student per course. Rating is 1–5.
+// avgRating on Course is recalculated (server action) on each write.
+model Review {
+  id     String  @id @default(cuid())
+  rating Int // 1–5
+  body   String? @db.Text
+
+  userId   String
+  courseId String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, courseId])
+  @@index([courseId])
+}
+
+// Payment record created after Stripe confirms a charge (Phase 7).
+// Exists now so the schema handles real money flows when we wire Stripe.
+model Purchase {
+  id                    String   @id @default(cuid())
+  userId                String
+  courseId              String
+  amount                Decimal  @db.Decimal(10, 2)
+  currency              String   @default("usd")
+  // Stripe PaymentIntent id — null until Stripe is wired (Step 19)
+  stripePaymentIntentId String?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
 }
