@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { getCurrentUser } from "@/lib/session";
+import { BecomeInstructor } from "@/features/instructor/components/become-instructor";
 import { TeachSidebar } from "@/features/instructor/components/teach-sidebar";
 import { TeachTopbar } from "@/features/instructor/components/teach-topbar";
 
@@ -9,7 +10,10 @@ export default async function TeachLayout({ children }: { children: ReactNode })
   const user = await getCurrentUser();
 
   if (!user) redirect("/login?callbackUrl=/teach");
-  if (user.role !== "INSTRUCTOR" && user.role !== "ADMIN") redirect("/dashboard");
+
+  if (user.role === "STUDENT") {
+    return <BecomeInstructor userName={user.name} />;
+  }
 
   const userLabel = user.name ?? user.email ?? "";
 

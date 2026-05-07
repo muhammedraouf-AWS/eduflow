@@ -10,7 +10,7 @@ import { loginSchema } from "@/features/auth/validations";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const { handlers, auth, signIn, signOut, unstable_update: updateSession } = NextAuth({
   ...authConfig,
   adapter: PrismaAdapter(db),
   session: { strategy: "jwt" },
@@ -56,11 +56,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         token.role = (user as any).role ?? "STUDENT";
+      }
+      // Role upgrade (e.g. student → instructor) without re-login
+      if (trigger === "update" && session?.user?.role) {
+        token.role = session.user.role;
       }
       return token;
     },
