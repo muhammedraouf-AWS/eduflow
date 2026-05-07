@@ -1,7 +1,7 @@
 # EduFlow — Project Context
 
 > **This is the single source of truth for the entire project.** Update it after every step.
-> Last updated: Phase 1 · Step 3 — Auth.js (Google + credentials, roles) complete.
+> Last updated: Phase 2 · Step 6 — Single course detail page complete.
 
 ---
 
@@ -104,33 +104,56 @@ eduflow/
 ├── src/
 │   ├── app/                        ← Next.js App Router
 │   │   ├── layout.tsx              ← root layout, providers, metadata
-│   │   ├── page.tsx                ← placeholder homepage (replaced in Phase 2)
-│   │   └── globals.css             ← Tailwind v4 + shadcn design tokens
+│   │   ├── globals.css             ← Tailwind v4 + shadcn design tokens
+│   │   ├── (auth)/                 ← login + register pages (Step 3)
+│   │   ├── (marketing)/            ← public pages with SiteHeader + SiteFooter
+│   │   │   ├── layout.tsx
+│   │   │   ├── page.tsx            ← landing page (Step 4)
+│   │   │   └── courses/
+│   │   │       ├── page.tsx        ← catalog with search/filter/sort (Step 5)
+│   │   │       └── [slug]/
+│   │   │           └── page.tsx    ← course detail page (Step 6)
+│   │   ├── api/auth/[...nextauth]/ ← Auth.js route handler (Step 3)
+│   │   └── dashboard/              ← placeholder, protected by proxy (Step 3)
 │   ├── components/
 │   │   ├── ui/                     ← shadcn primitives (button, card, input, …)
 │   │   └── shared/                 ← cross-feature composites
-│   ├── features/                   ← feature-based modules (added per phase)
+│   │       ├── site-header.tsx     ← auth-aware server component (Step 4)
+│   │       ├── site-footer.tsx     ← (Step 4)
+│   │       ├── theme-toggle.tsx    ← client component (Step 4)
+│   │       └── course-card.tsx     ← reusable catalog card (Step 4)
+│   ├── features/
+│   │   ├── auth/                   ← login/register forms, actions, validations (Step 3)
+│   │   ├── landing/                ← hero, categories, stats, instructors sections (Step 4)
+│   │   │   ├── queries/            ← getFeaturedCourses, getCategories, getLandingStats, getTopInstructors
+│   │   │   └── components/
+│   │   └── courses/                ← catalog + detail (Steps 5–6)
+│   │       ├── queries/            ← getCourses, getCourseFilterMeta, getCourseBySlug, getEnrollmentStatus
+│   │       ├── actions/            ← enrollAction (free enroll → Enrollment upsert)
+│   │       └── components/         ← search, filters, sort, pagination, hero, sidebar, curriculum, reviews
 │   ├── lib/
 │   │   ├── db.ts                   ← Prisma client singleton
 │   │   ├── env.ts                  ← type-safe env vars (Zod-validated)
 │   │   ├── cloudinary.ts           ← server-side Cloudinary client + folder map
+│   │   ├── session.ts              ← getCurrentUser / requireAuth / requireRole (Step 3)
 │   │   └── utils.ts                ← cn() + small helpers (shadcn)
 │   ├── hooks/                      ← global hooks only
 │   ├── providers/
 │   │   ├── theme-provider.tsx      ← next-themes wrapper
-│   │   └── index.tsx               ← composed AppProviders
+│   │   └── index.tsx               ← composed AppProviders (SessionProvider + ThemeProvider)
 │   ├── config/
 │   │   └── site.ts                 ← site metadata, branding, links
-│   ├── types/                      ← global ambient types
-│   └── generated/                  ← Prisma client (gitignored)
+│   ├── types/
+│   │   └── next-auth.d.ts          ← augments Session/User with id + role (Step 3)
+│   └── generated/                  ← Prisma client (gitignored, regenerated on build)
 ├── prisma.config.ts                ← Prisma 7 config (loads .env.local)
 ├── components.json                 ← shadcn config
 ├── eslint.config.mjs               ← flat config + Prettier integration
 ├── .prettierrc.json
 ├── .prettierignore
 ├── tsconfig.json                   ← strict + noUncheckedIndexedAccess + noImplicitOverride
-├── next.config.ts
-├── package.json
+├── next.config.ts                  ← image remotePatterns (Unsplash, Cloudinary, Google, GitHub)
+├── package.json                    ← build: "prisma generate && next build"
 ├── .env.example                    ← committed template
 ├── .gitignore
 └── README.md
@@ -222,7 +245,7 @@ All demo accounts use password `password123`.
 
 > _Implemented in Phase 1 · Step 3._
 
-Planned: Auth.js v5 with the Prisma adapter, **database sessions**, Google OAuth + Credentials provider. Middleware protects `/dashboard/**` and `/teach/**`. Roles (`STUDENT | INSTRUCTOR | ADMIN`) live on the `User` model and are re-checked in every server action.
+Auth.js v5 with the Prisma adapter, **database sessions**, Google OAuth + Credentials provider. `src/proxy.ts` (Next.js 16 convention, Node.js runtime) protects `/dashboard/**`, `/teach/**`, and `/admin/**`. Roles (`STUDENT | INSTRUCTOR | ADMIN`) live on the `User` model and are re-checked in every server action. `getCurrentUser()` / `requireAuth()` / `requireRole()` helpers in `src/lib/session.ts`.
 
 ---
 
@@ -273,7 +296,7 @@ See `.env.example` for the full list. Validated in `src/lib/env.ts`.
 - **Hosting**: Vercel.
 - **Database**: Neon serverless Postgres (pooled connection string for runtime, direct for migrations).
 - **Cloudinary**: free tier for dev. Production should use a separate cloud or strict folder-prefixed presets.
-- **Build command**: `npm run build` (Next.js handles Prisma generate via `next` if configured; we'll add a `vercel-build` script if needed).
+- **Build command**: `prisma generate && next build` — the `build` script in `package.json` runs `prisma generate` first so Vercel has the generated client before Next.js compiles.
 - **Env vars**: must be set in the Vercel dashboard for **all three environments** (Production, Preview, Development).
 
 ---
@@ -285,10 +308,10 @@ See `.env.example` for the full list. Validated in `src/lib/env.ts`.
 | 1     | 1    | Project foundation                         | ✅ done    |
 | 1     | 2    | Prisma schema + seed                       | ✅ done    |
 | 1     | 3    | Auth.js (Google + credentials, roles)      | ✅ done    |
-| 2     | 4    | Public landing page                        | ⏭ next    |
-| 2     | 5    | Course browsing (search/filter/categories) | ⏳ pending |
-| 2     | 6    | Single course page                         | ⏳ pending |
-| 3     | 7    | Instructor dashboard layout                | ⏳ pending |
+| 2     | 4    | Public landing page                        | ✅ done    |
+| 2     | 5    | Course browsing (search/filter/categories) | ✅ done    |
+| 2     | 6    | Single course page                         | ✅ done    |
+| 3     | 7    | Instructor dashboard layout                | ⏭ next    |
 | 3     | 8    | Course CRUD + thumbnail upload             | ⏳ pending |
 | 3     | 9    | Chapter mgmt + video upload + DnD          | ⏳ pending |
 | 4     | 10   | Student library                            | ⏳ pending |
@@ -365,15 +388,57 @@ After Step 1 close-out (2026-05-07):
 - ✅ Updated `src/providers/index.tsx` — added `SessionProvider` wrapper
 - ✅ Build + typecheck pass clean
 
-## 17. Pending Tasks (next up — Step 4)
+## 17. Completed Tasks (Phase 2 · Step 4 — Public landing page)
 
-- ⏭ Build public landing page (hero, featured courses, categories, CTA)
-- ⏭ Add site header (nav with login/logout, role-aware links)
-- ⏭ Add site footer
+- ✅ Created `src/app/(marketing)/layout.tsx` — wraps all marketing pages with `SiteHeader` + `SiteFooter`
+- ✅ Replaced placeholder `src/app/page.tsx` with `src/app/(marketing)/page.tsx` (landing page)
+- ✅ Created `src/components/shared/site-header.tsx` — sticky, auth-aware server component; shows Dashboard vs Sign in/Get started
+- ✅ Created `src/components/shared/site-footer.tsx` — four-column link grid
+- ✅ Created `src/components/shared/theme-toggle.tsx` — client component using `next-themes`
+- ✅ Created `src/components/shared/course-card.tsx` — reusable card (thumbnail, category badge, rating, students, price)
+- ✅ Created `src/features/landing/queries/index.ts` — `getFeaturedCourses`, `getCategories`, `getLandingStats`, `getTopInstructors`
+- ✅ Created landing sections: `HeroSection`, `CategoriesSection`, `FeaturedCourses`, `StatsSection`, `InstructorsSection`, `CtaBanner`
+- ✅ Added `next.config.ts` image `remotePatterns` for `images.unsplash.com`, `res.cloudinary.com`, `lh3.googleusercontent.com`, `avatars.githubusercontent.com`
 
 ---
 
-## 16. Important Decisions Log
+## 18. Completed Tasks (Phase 2 · Step 5 — Course catalog)
+
+- ✅ Created `src/features/courses/queries/index.ts` — `getCourses()` with keyword search, category/level filter, 5 sort options, 12-per-page pagination; `getCourseFilterMeta()` for sidebar data
+- ✅ Created `src/features/courses/components/courses-search.tsx` — debounced (350 ms) search, URL-param driven
+- ✅ Created `src/features/courses/components/courses-sort.tsx` — sort select: popular / highest rated / newest / price low / price high
+- ✅ Created `src/features/courses/components/courses-filters.tsx` — category + level sidebar with active state; all filter state in URL search params (shareable, SSR-friendly)
+- ✅ Created `src/features/courses/components/active-filters.tsx` — chips showing active filters with individual remove + clear all
+- ✅ Created `src/features/courses/components/courses-pagination.tsx` — page buttons with ellipsis
+- ✅ Created `src/features/courses/components/mobile-filters-toggle.tsx` — collapsible filter panel on mobile
+- ✅ Created `src/app/(marketing)/courses/page.tsx` — server page reading async `searchParams`, parallel DB fetches
+
+---
+
+## 19. Completed Tasks (Phase 2 · Step 6 — Single course page)
+
+- ✅ Created `src/features/courses/queries/course-detail.ts` — `getCourseBySlug` (chapters, reviews, instructor) + `getEnrollmentStatus`
+- ✅ Created `src/features/courses/actions/enroll.ts` — server action: free enroll → `Enrollment` upsert → redirect `/dashboard`; paid courses disabled (Stripe Phase 7)
+- ✅ Created `src/features/courses/components/enroll-button.tsx` — auth-aware: redirects to login if signed out, "Continue learning" if enrolled, disabled placeholder for paid
+- ✅ Created `src/features/courses/components/course-hero.tsx` — dark full-width hero (breadcrumb, rating, students, level, language, category badge)
+- ✅ Created `src/features/courses/components/course-sidebar.tsx` — sticky price card on desktop, full-width below content on mobile
+- ✅ Created `src/features/courses/components/course-curriculum.tsx` — collapsible chapter list with free preview badges and durations
+- ✅ Created `src/features/courses/components/course-what-you-learn.tsx` — objectives grid
+- ✅ Created `src/features/courses/components/course-instructor.tsx` — avatar, headline, bio, stats
+- ✅ Created `src/features/courses/components/course-reviews.tsx` — student reviews with star ratings
+- ✅ Created `src/app/(marketing)/courses/[slug]/page.tsx` — server page with `notFound()`, parallel fetching, per-course `generateMetadata`
+
+---
+
+## 20. Pending Tasks (next up — Step 7)
+
+- ⏭ Instructor dashboard layout (`/teach`) with sidebar nav
+- ⏭ Course CRUD (create, edit, publish/unpublish) — Step 8
+- ⏭ Chapter management + video upload to Cloudinary — Step 9
+
+---
+
+## 21. Important Decisions Log
 
 - **2026-05-07** — Chose **npm** as package manager (user preference; widest compatibility).
 - **2026-05-07** — Chose **Neon** for Postgres (serverless, free tier, zero setup, Vercel-friendly).
