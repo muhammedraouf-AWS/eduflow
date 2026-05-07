@@ -257,7 +257,17 @@ See `.env.example` for the full list. Validated in `src/lib/env.ts`.
 
 ---
 
-## 13. Completed Tasks (Phase 1 · Step 1)
+## 13. Verified Working State
+
+After Step 1 close-out (2026-05-07):
+
+- ✅ Code pushed to GitHub: <https://github.com/muhammedraouf-AWS/eduflow>
+- ✅ Neon Postgres reachable — `neondb` on PostgreSQL 17.8 (pooled URL, region `us-east-1`)
+- ✅ `.env.local` populated locally (gitignored): `DATABASE_URL`, `AUTH_SECRET`, `AUTH_GOOGLE_ID/SECRET`, full Cloudinary credentials
+- ✅ `npm run dev` boots clean — homepage renders with no Base UI / hydration warnings
+- ✅ Typecheck, lint, format all green
+
+## 14. Completed Tasks (Phase 1 · Step 1)
 
 - ✅ Scaffolded Next.js 16 with App Router, TypeScript, Tailwind v4, ESLint
 - ✅ Installed Prisma 7, Auth.js v5, Cloudinary, Zod, RHF, next-themes, Sonner, lucide-react
@@ -277,7 +287,7 @@ See `.env.example` for the full list. Validated in `src/lib/env.ts`.
 
 ---
 
-## 14. Pending Tasks (next up — Step 2)
+## 15. Pending Tasks (next up — Step 2)
 
 - ⏭ Design the full Prisma schema (User, Course, Chapter, Attachment, Enrollment, Progress, Review, Category, Purchase, InstructorProfile, Auth.js tables)
 - ⏭ Run first migration against Neon
@@ -286,7 +296,7 @@ See `.env.example` for the full list. Validated in `src/lib/env.ts`.
 
 ---
 
-## 15. Important Decisions Log
+## 16. Important Decisions Log
 
 - **2026-05-07** — Chose **npm** as package manager (user preference; widest compatibility).
 - **2026-05-07** — Chose **Neon** for Postgres (serverless, free tier, zero setup, Vercel-friendly).
@@ -297,3 +307,5 @@ See `.env.example` for the full list. Validated in `src/lib/env.ts`.
 - **2026-05-07** — **Prisma 7 driver adapters are mandatory.** Installed `@prisma/adapter-pg` (uses node-postgres). Compatible with Neon's pooled URL, local Postgres, RDS, etc. Future upgrade path: `@prisma/adapter-neon` for Edge Runtime + Neon serverless WebSocket driver if we need Edge auth later.
 - **2026-05-07** — shadcn `base-nova` preset uses **Base UI** (not Radix). Different mental model: instead of `asChild`, we pass `render={<a />}` and (for non-button elements) `nativeButton={false}`. Documented so future contributors don't trip on this.
 - **2026-05-07** — `src/generated/prisma` is **gitignored** and must be regenerated after every clone (`npm run db:generate`). This keeps the repo small and avoids stale checked-in clients.
+- **2026-05-07** — GitHub auth: cleared a stale `muhammedraouf1992` cached credential from Windows Credential Manager so Git Credential Manager could re-auth as `muhammedraouf-AWS`. Future contributors on Windows hitting "permission denied" 403s should run `cmdkey /delete:LegacyGeneric:target=git:https://github.com` and push again to trigger a browser re-auth.
+- **2026-05-07** — Noted: `pg` v9 / `pg-connection-string` v3 will tighten SSL semantics — `sslmode=require` will no longer alias to `verify-full`. **Action item for production**: pin to `sslmode=verify-full` in the Neon URL when we deploy.
