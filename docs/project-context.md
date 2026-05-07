@@ -1,7 +1,7 @@
 # EduFlow — Project Context
 
 > **This is the single source of truth for the entire project.** Update it after every step.
-> Last updated: Phase 2 · Step 6 — Single course detail page complete.
+> Last updated: Phase 3 · Step 7 — Instructor dashboard layout complete.
 
 ---
 
@@ -106,6 +106,11 @@ eduflow/
 │   │   ├── layout.tsx              ← root layout, providers, metadata
 │   │   ├── globals.css             ← Tailwind v4 + shadcn design tokens
 │   │   ├── (auth)/                 ← login + register pages (Step 3)
+│   │   ├── (teach)/                ← instructor dashboard (Step 7+)
+│   │   │   ├── layout.tsx          ← role-gated (INSTRUCTOR | ADMIN), sidebar + topbar
+│   │   │   └── teach/
+│   │   │       ├── page.tsx        ← /teach overview: stats + enrollments + top courses
+│   │   │       └── courses/page.tsx ← /teach/courses placeholder (Step 8)
 │   │   ├── (marketing)/            ← public pages with SiteHeader + SiteFooter
 │   │   │   ├── layout.tsx
 │   │   │   ├── page.tsx            ← landing page (Step 4)
@@ -127,10 +132,13 @@ eduflow/
 │   │   ├── landing/                ← hero, categories, stats, instructors sections (Step 4)
 │   │   │   ├── queries/            ← getFeaturedCourses, getCategories, getLandingStats, getTopInstructors
 │   │   │   └── components/
-│   │   └── courses/                ← catalog + detail (Steps 5–6)
-│   │       ├── queries/            ← getCourses, getCourseFilterMeta, getCourseBySlug, getEnrollmentStatus
-│   │       ├── actions/            ← enrollAction (free enroll → Enrollment upsert)
-│   │       └── components/         ← search, filters, sort, pagination, hero, sidebar, curriculum, reviews
+│   │   ├── courses/                ← catalog + detail (Steps 5–6)
+│   │   │   ├── queries/            ← getCourses, getCourseFilterMeta, getCourseBySlug, getEnrollmentStatus
+│   │   │   ├── actions/            ← enrollAction (free enroll → Enrollment upsert)
+│   │   │   └── components/         ← search, filters, sort, pagination, hero, sidebar, curriculum, reviews
+│   │   └── instructor/             ← instructor dashboard (Step 7+)
+│   │       ├── queries/            ← getInstructorOverview (stats, recent enrollments, top courses)
+│   │       └── components/         ← TeachSidebar, TeachTopbar, OverviewStats, RecentEnrollments, TopCourses
 │   ├── lib/
 │   │   ├── db.ts                   ← Prisma client singleton
 │   │   ├── env.ts                  ← type-safe env vars (Zod-validated)
@@ -311,8 +319,8 @@ See `.env.example` for the full list. Validated in `src/lib/env.ts`.
 | 2     | 4    | Public landing page                        | ✅ done    |
 | 2     | 5    | Course browsing (search/filter/categories) | ✅ done    |
 | 2     | 6    | Single course page                         | ✅ done    |
-| 3     | 7    | Instructor dashboard layout                | ⏭ next    |
-| 3     | 8    | Course CRUD + thumbnail upload             | ⏳ pending |
+| 3     | 7    | Instructor dashboard layout                | ✅ done    |
+| 3     | 8    | Course CRUD + thumbnail upload             | ⏭ next    |
 | 3     | 9    | Chapter mgmt + video upload + DnD          | ⏳ pending |
 | 4     | 10   | Student library                            | ⏳ pending |
 | 4     | 11   | Video player + progress tracking           | ⏳ pending |
@@ -430,15 +438,30 @@ After Step 1 close-out (2026-05-07):
 
 ---
 
-## 20. Pending Tasks (next up — Step 7)
+## 20. Completed Tasks (Phase 3 · Step 7 — Instructor dashboard layout)
 
-- ⏭ Instructor dashboard layout (`/teach`) with sidebar nav
-- ⏭ Course CRUD (create, edit, publish/unpublish) — Step 8
-- ⏭ Chapter management + video upload to Cloudinary — Step 9
+- ✅ Created `src/app/(teach)/layout.tsx` — full-height two-column layout, role-gated to `INSTRUCTOR | ADMIN`, redirects STUDENT → `/dashboard`
+- ✅ Created `src/features/instructor/components/teach-sidebar.tsx` — fixed 224px sidebar with 6 nav items, active link highlight via `usePathname`, "Back to site" link
+- ✅ Created `src/features/instructor/components/teach-topbar.tsx` — mobile hamburger + slide-in drawer overlay with backdrop dismiss
+- ✅ Created `src/features/instructor/queries/index.ts` — `getInstructorOverview`: stats, recent enrollments, top courses — all in one parallel fetch
+- ✅ Created `src/features/instructor/components/overview-stats.tsx` — 4 stat cards (total students, published courses, avg rating, total courses)
+- ✅ Created `src/features/instructor/components/recent-enrollments.tsx` — live "X ago" timestamps, student avatar, course link
+- ✅ Created `src/features/instructor/components/top-courses.tsx` — thumbnail, title, students, rating, published/draft badge; links to future edit page
+- ✅ Created `src/app/(teach)/teach/page.tsx` — `/teach` overview with stats grid + two-column recent/top panels
+- ✅ Created `src/app/(teach)/teach/courses/page.tsx` — `/teach/courses` placeholder (Step 8)
+- ✅ Demo: sign in as `sarah.chen@eduflow.dev` / `password123` → visit `/teach`
 
 ---
 
-## 21. Important Decisions Log
+## 21. Pending Tasks (next up — Step 8)
+
+- ⏭ Course CRUD: create form, edit form, publish/unpublish toggle (`/teach/courses/new`, `/teach/courses/[id]/edit`)
+- ⏭ Thumbnail upload to Cloudinary (signed direct upload)
+- ⏭ Chapter management + video upload + drag-and-drop reorder — Step 9
+
+---
+
+## 22. Important Decisions Log
 
 - **2026-05-07** — Chose **npm** as package manager (user preference; widest compatibility).
 - **2026-05-07** — Chose **Neon** for Postgres (serverless, free tier, zero setup, Vercel-friendly).
