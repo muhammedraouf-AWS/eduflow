@@ -2,33 +2,40 @@
 
 import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 import { signIn, signOut } from "@/auth";
 import {
   loginSchema,
   registerSchema,
-  type LoginInput,
   type RegisterInput,
 } from "@/features/auth/validations";
 import { db } from "@/lib/db";
 
-export async function loginAction(
-  data: LoginInput,
-  callbackUrl?: string,
+export async function loginFormAction(
+  formData: FormData,
 ): Promise<{ error: string } | { redirectTo: string }> {
-  const parsed = loginSchema.safeParse(data);
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+  const callbackUrl = (formData.get("callbackUrl") as string) || "/dashboard";
+
+  const parsed = loginSchema.safeParse({ email, password });
   if (!parsed.success) {
-    return { error: "Invalid input" };
+    return { error: "Invalid email or password" };
   }
 
   try {
     await signIn("credentials", {
       email: parsed.data.email,
       password: parsed.data.password,
-      redirect: false,
+      redirectTo: callbackUrl,
     });
-    return { redirectTo: callbackUrl ?? "/dashboard" };
+    return { redirectTo: callbackUrl };
   } catch (error) {
+    if (isRedirectError(error)) {
+      // signIn succeeded — session created, cookie set
+      return { redirectTo: callbackUrl };
+    }
     if (error instanceof AuthError) {
       switch (error.type) {
         case "CredentialsSignin":

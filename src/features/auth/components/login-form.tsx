@@ -1,19 +1,15 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  loginAction,
-  loginWithGoogleAction,
-} from "@/features/auth/actions";
+import { loginWithGoogleAction, loginFormAction } from "@/features/auth/actions";
 import { loginSchema, type LoginInput } from "@/features/auth/validations";
 
 function GoogleIcon() {
@@ -41,30 +37,47 @@ function GoogleIcon() {
 
 export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
   const [showPassword, setShowPassword] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const {
     register,
-    handleSubmit,
+    trigger,
+    getValues,
     formState: { errors },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
   });
 
-  function onSubmit(data: LoginInput) {
-    startTransition(async () => {
-      const result = await loginAction(data, callbackUrl);
-      if ("error" in result) {
-        toast.error(result.error);
-      } else {
-        window.location.href = result.redirectTo;
-      }
-    });
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setServerError(null);
+
+    const valid = await trigger();
+    if (!valid) return;
+
+    setIsSubmitting(true);
+
+    const { email, password } = getValues();
+    const fd = new FormData();
+    fd.set("email", email);
+    fd.set("password", password);
+    if (callbackUrl) fd.set("callbackUrl", callbackUrl);
+
+    const result = await loginFormAction(fd);
+
+    if ("error" in result) {
+      setServerError(result.error);
+      setIsSubmitting(false);
+    } else {
+      // Full page navigation — bypasses router cache, picks up new session cookie
+      window.location.href = result.redirectTo;
+    }
   }
 
   return (
     <div className="space-y-5">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1.5">
           <Label htmlFor="email">Email address</Label>
           <Input
@@ -120,14 +133,17 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
           )}
         </div>
 
+        {serverError && (
+          <p className="text-sm text-destructive">{serverError}</p>
+        )}
+
         <Button
           type="submit"
           className="w-full"
           size="lg"
-          disabled={isPending}
+          disabled={isSubmitting}
         >
-          {isPending && <Loader2 className="size-4 animate-spin" />}
-          Sign in
+          {isSubmitting ? "Signing in…" : "Sign in"}
         </Button>
       </form>
 

@@ -13,7 +13,7 @@ import { env } from "@/lib/env";
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   adapter: PrismaAdapter(db),
-  session: { strategy: "database" },
+  session: { strategy: "jwt" },
   providers: [
     ...(env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET
       ? [
@@ -56,10 +56,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    session({ session, user }) {
-      session.user.id = user.id;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      session.user.role = (user as any).role;
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        token.role = (user as any).role ?? "STUDENT";
+      }
+      return token;
+    },
+    session({ session, token }) {
+      if (token) {
+        session.user.id = token.id as string;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        session.user.role = token.role as any;
+      }
       return session;
     },
   },

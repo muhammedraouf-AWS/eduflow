@@ -30,6 +30,7 @@ export default async function LoginPage({ searchParams }: Props) {
         </div>
       )}
 
+
       <LoginForm callbackUrl={callbackUrl} />
 
       <p className="text-center text-sm text-muted-foreground">
