@@ -50,7 +50,7 @@ export async function loginFormAction(
 
 export async function registerAction(
   data: RegisterInput,
-): Promise<{ error: string } | void> {
+): Promise<{ error: string } | { redirectTo: string }> {
   const parsed = registerSchema.safeParse(data);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -79,7 +79,11 @@ export async function registerAction(
       password,
       redirectTo: "/dashboard",
     });
+    return { redirectTo: "/dashboard" };
   } catch (error) {
+    if (isRedirectError(error)) {
+      return { redirectTo: "/dashboard" };
+    }
     if (error instanceof AuthError) {
       return { error: "Account created. Please sign in." };
     }

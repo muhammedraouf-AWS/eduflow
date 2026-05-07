@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
@@ -41,7 +41,7 @@ function GoogleIcon() {
 export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
 
   const {
     register,
@@ -51,13 +51,15 @@ export function RegisterForm() {
     resolver: zodResolver(registerSchema),
   });
 
-  function onSubmit(data: RegisterInput) {
-    startTransition(async () => {
-      const result = await registerAction(data);
-      if (result?.error) {
-        toast.error(result.error);
-      }
-    });
+  async function onSubmit(data: RegisterInput) {
+    setIsPending(true);
+    const result = await registerAction(data);
+    if ("error" in result) {
+      toast.error(result.error);
+      setIsPending(false);
+    } else {
+      window.location.href = result.redirectTo;
+    }
   }
 
   return (

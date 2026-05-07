@@ -4,6 +4,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { logoutAction } from "@/features/auth/actions";
 import { siteConfig } from "@/config/site";
 
 export async function SiteHeader() {
@@ -31,9 +32,16 @@ export async function SiteHeader() {
           <ThemeToggle />
 
           {user ? (
-            <Button size="sm" nativeButton={false} render={<Link href="/dashboard" />}>
-              Dashboard
-            </Button>
+            <>
+              <Button size="sm" nativeButton={false} render={<Link href="/dashboard" />}>
+                Dashboard
+              </Button>
+              <form action={logoutAction}>
+                <Button variant="ghost" size="sm" type="submit">
+                  Sign out
+                </Button>
+              </form>
+            </>
           ) : (
             <>
               <Button

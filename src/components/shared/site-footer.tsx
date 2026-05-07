@@ -55,7 +55,7 @@ export function SiteFooter() {
               <p className="mb-3 text-sm font-semibold">{group.heading}</p>
               <ul className="space-y-2">
                 {group.links.map((link) => (
-                  <li key={link.href}>
+                  <li key={link.label}>
                     <Link
                       href={link.href}
                       className="text-sm text-muted-foreground transition-colors hover:text-foreground"
