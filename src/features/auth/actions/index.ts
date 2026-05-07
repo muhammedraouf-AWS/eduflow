@@ -15,7 +15,7 @@ import { db } from "@/lib/db";
 export async function loginAction(
   data: LoginInput,
   callbackUrl?: string,
-): Promise<{ error: string } | void> {
+): Promise<{ error: string } | { redirectTo: string }> {
   const parsed = loginSchema.safeParse(data);
   if (!parsed.success) {
     return { error: "Invalid input" };
@@ -25,8 +25,9 @@ export async function loginAction(
     await signIn("credentials", {
       email: parsed.data.email,
       password: parsed.data.password,
-      redirectTo: callbackUrl ?? "/dashboard",
+      redirect: false,
     });
+    return { redirectTo: callbackUrl ?? "/dashboard" };
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {

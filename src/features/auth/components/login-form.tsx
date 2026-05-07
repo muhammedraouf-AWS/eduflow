@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
@@ -40,6 +41,7 @@ function GoogleIcon() {
 }
 
 export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -54,8 +56,10 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
   function onSubmit(data: LoginInput) {
     startTransition(async () => {
       const result = await loginAction(data, callbackUrl);
-      if (result?.error) {
+      if ("error" in result) {
         toast.error(result.error);
+      } else {
+        router.push(result.redirectTo);
       }
     });
   }
