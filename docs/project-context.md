@@ -1,7 +1,7 @@
 # EduFlow — Project Context
 
 > **This is the single source of truth for the entire project.** Update it after every step.
-> Last updated: Phase 1 · Step 2 — Prisma schema + seed complete.
+> Last updated: Phase 1 · Step 3 — Auth.js (Google + credentials, roles) complete.
 
 ---
 
@@ -284,8 +284,8 @@ See `.env.example` for the full list. Validated in `src/lib/env.ts`.
 | ----- | ---- | ------------------------------------------ | ---------- |
 | 1     | 1    | Project foundation                         | ✅ done    |
 | 1     | 2    | Prisma schema + seed                       | ✅ done    |
-| 1     | 3    | Auth.js (Google + credentials, roles)      | ⏭ next    |
-| 2     | 4    | Public landing page                        | ⏳ pending |
+| 1     | 3    | Auth.js (Google + credentials, roles)      | ✅ done    |
+| 2     | 4    | Public landing page                        | ⏭ next    |
 | 2     | 5    | Course browsing (search/filter/categories) | ⏳ pending |
 | 2     | 6    | Single course page                         | ⏳ pending |
 | 3     | 7    | Instructor dashboard layout                | ⏳ pending |
@@ -344,15 +344,32 @@ After Step 1 close-out (2026-05-07):
 - ✅ Verified all counts in Neon via Prisma query
 - ✅ Typecheck passes clean
 
-## 16. Pending Tasks (next up — Step 3)
+## 16. Completed Tasks (Phase 1 · Step 3)
 
-- ⏭ Configure Auth.js v5 with `@auth/prisma-adapter`
-- ⏭ Implement Credentials provider (email + bcrypt password)
-- ⏭ Implement Google OAuth provider
-- ⏭ Create login + register pages with RHF + Zod validation
-- ⏭ Set up middleware for route protection (`/dashboard/**`, `/teach/**`)
-- ⏭ Add role-based guards and session helpers
-- ⏭ Verify auth works end-to-end with seeded users
+- ✅ Configured Auth.js v5 with `@auth/prisma-adapter` + database sessions
+- ✅ Implemented Credentials provider (email + bcrypt, 12 rounds)
+- ✅ Implemented Google OAuth provider (optional, enabled when `AUTH_GOOGLE_ID/SECRET` present)
+- ✅ Created `src/auth.config.ts` — shared pages config (`signIn: "/login"`)
+- ✅ Created `src/auth.ts` — full NextAuth config (Prisma adapter, providers, session callback)
+- ✅ Created `src/proxy.ts` — Next.js 16 proxy (renamed from middleware; Node.js runtime, full DB session check)
+- ✅ Created `src/types/next-auth.d.ts` — augments Session + User with `id: string` and `role: Role`
+- ✅ Created `src/lib/session.ts` — `getCurrentUser()`, `requireAuth()`, `requireRole()` helpers
+- ✅ Created `src/features/auth/validations/index.ts` — `loginSchema` + `registerSchema` (Zod 4)
+- ✅ Created `src/features/auth/actions/index.ts` — `loginAction`, `registerAction`, `loginWithGoogleAction`, `logoutAction`
+- ✅ Created `src/features/auth/components/login-form.tsx` — RHF + Zod, password toggle, Google OAuth form
+- ✅ Created `src/features/auth/components/register-form.tsx` — name + email + password + confirm
+- ✅ Created `src/app/api/auth/[...nextauth]/route.ts` — Auth.js route handler
+- ✅ Created `src/app/(auth)/layout.tsx` — two-column layout (dark branding panel + form panel)
+- ✅ Created `src/app/(auth)/login/page.tsx` + `register/page.tsx`
+- ✅ Created placeholder `src/app/dashboard/page.tsx`
+- ✅ Updated `src/providers/index.tsx` — added `SessionProvider` wrapper
+- ✅ Build + typecheck pass clean
+
+## 17. Pending Tasks (next up — Step 4)
+
+- ⏭ Build public landing page (hero, featured courses, categories, CTA)
+- ⏭ Add site header (nav with login/logout, role-aware links)
+- ⏭ Add site footer
 
 ---
 
@@ -366,6 +383,8 @@ After Step 1 close-out (2026-05-07):
 - **2026-05-07** — Set `noUncheckedIndexedAccess: true` — array/object access returns `T | undefined`. Slightly more verbose, catches a class of real bugs (especially around dynamic course/chapter lookups).
 - **2026-05-07** — **Prisma 7 driver adapters are mandatory.** Installed `@prisma/adapter-pg` (uses node-postgres). Compatible with Neon's pooled URL, local Postgres, RDS, etc. Future upgrade path: `@prisma/adapter-neon` for Edge Runtime + Neon serverless WebSocket driver if we need Edge auth later.
 - **2026-05-07** — shadcn `base-nova` preset uses **Base UI** (not Radix). Different mental model: instead of `asChild`, we pass `render={<a />}` and (for non-button elements) `nativeButton={false}`. Documented so future contributors don't trip on this.
+- **2026-05-07** — Next.js 16 renamed `middleware.ts` → `proxy.ts`. The proxy defaults to **Node.js runtime** (not Edge), so `auth` from `@/auth` (Prisma-backed) can be imported directly — no split Edge-compatible config needed. Auth.js `auth()` wrapper used as the proxy export.
+- **2026-05-07** — Zod v4 uses `.issues` (not `.errors`) on `ZodError`. Also Prisma 7 enum types live at `@/generated/prisma/client`, not `@/generated/prisma`.
 - **2026-05-07** — `src/generated/prisma` is **gitignored** and must be regenerated after every clone (`npm run db:generate`). This keeps the repo small and avoids stale checked-in clients.
 - **2026-05-07** — GitHub auth: cleared a stale `muhammedraouf1992` cached credential from Windows Credential Manager so Git Credential Manager could re-auth as `muhammedraouf-AWS`. Future contributors on Windows hitting "permission denied" 403s should run `cmdkey /delete:LegacyGeneric:target=git:https://github.com` and push again to trigger a browser re-auth.
 - **2026-05-07** — Noted: `pg` v9 / `pg-connection-string` v3 will tighten SSL semantics — `sslmode=require` will no longer alias to `verify-full`. **Action item for production**: pin to `sslmode=verify-full` in the Neon URL when we deploy.
