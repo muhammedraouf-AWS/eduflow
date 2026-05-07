@@ -1,0 +1,16 @@
+.next
+.vercel
+node_modules
+build
+dist
+out
+coverage
+public
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+*.log
+
+# generated
+src/generated
+prisma/migrations

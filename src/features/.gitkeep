@@ -1,0 +1,8 @@
+# Feature-based modules will live here. Each feature folder contains:
+#   actions/      — server actions (mutations)
+#   queries/      — server-side data fetchers (reads)
+#   components/   — UI used only by this feature
+#   hooks/        — client-side hooks
+#   validations/  — Zod schemas
+#   types/        — TS types
+#   lib/          — feature-local utilities

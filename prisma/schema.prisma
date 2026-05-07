@@ -1,0 +1,12 @@
+// EduFlow — Prisma schema
+// Single source of truth for the database. Models are added in Step 2.
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}

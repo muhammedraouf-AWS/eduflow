@@ -1,0 +1,2 @@
+# Cross-feature composite components (page-header, empty-state, etc.).
+# Single-feature components belong in src/features/<x>/components/.

@@ -1,0 +1,1 @@
+# Truly global hooks only. Feature-specific hooks belong in src/features/<x>/hooks/.
