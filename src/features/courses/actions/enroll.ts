@@ -27,5 +27,16 @@ export async function enrollAction(courseId: string, courseSlug: string) {
     update: {},
   });
 
+  // Redirect to first published chapter if one exists
+  const firstChapter = await db.chapter.findFirst({
+    where: { courseId, isPublished: true },
+    orderBy: { position: "asc" },
+    select: { id: true },
+  });
+
+  if (firstChapter) {
+    redirect(`/learn/${courseSlug}/${firstChapter.id}`);
+  }
+
   redirect(`/dashboard`);
 }

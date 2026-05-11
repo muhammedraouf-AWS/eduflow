@@ -11,6 +11,7 @@ export const proxy = auth((req) => {
   const isAuthRoute = pathname === "/login" || pathname === "/register";
   const isProtected =
     pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/learn") ||
     pathname.startsWith("/teach") ||
     pathname.startsWith("/admin");
 
