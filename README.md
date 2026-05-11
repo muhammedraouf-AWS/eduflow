@@ -164,7 +164,7 @@ For the full architectural breakdown, decisions log, and roadmap, see **[`docs/p
 | 7     | Stripe payments                                     |
 | 8     | Production deployment, monitoring, error tracking   |
 
-Detailed status per step lives in [`docs/project-context.md`](./docs/project-context.md).
+
 
 ---
 
