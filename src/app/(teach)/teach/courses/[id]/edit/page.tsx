@@ -7,9 +7,12 @@ import {
   getCourseForEdit,
   getInstructorCategories,
 } from "@/features/instructor/queries/courses";
+import { getCourseChapters } from "@/features/instructor/queries/chapters";
 import { EditCourseForm } from "@/features/instructor/components/edit-course-form";
 import { ThumbnailUploader } from "@/features/instructor/components/thumbnail-uploader";
 import { PublishToggle } from "@/features/instructor/components/publish-toggle";
+import { ChaptersList } from "@/features/instructor/components/chapters-list";
+import { AddChapterForm } from "@/features/instructor/components/add-chapter-form";
 import {
   Card,
   CardContent,
@@ -35,9 +38,10 @@ export default async function EditCoursePage({ params }: EditCoursePageProps) {
   const { id } = await params;
   const user = await requireAuth();
 
-  const [course, categories] = await Promise.all([
+  const [course, categories, chapters] = await Promise.all([
     getCourseForEdit(id, user.id),
     getInstructorCategories(),
+    getCourseChapters(id, user.id),
   ]);
 
   if (!course) notFound();
@@ -95,6 +99,17 @@ export default async function EditCoursePage({ params }: EditCoursePageProps) {
             </CardHeader>
             <CardContent className="pt-5">
               <ThumbnailUploader courseId={course.id} currentUrl={course.thumbnailUrl} />
+            </CardContent>
+          </Card>
+
+          {/* Chapters */}
+          <Card>
+            <CardHeader className="border-b">
+              <CardTitle>Chapters</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-5">
+              <ChaptersList chapters={chapters ?? []} courseId={course.id} />
+              <AddChapterForm courseId={course.id} />
             </CardContent>
           </Card>
         </div>

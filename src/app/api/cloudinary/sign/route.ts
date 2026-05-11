@@ -11,8 +11,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = (await req.json()) as { courseId?: string };
-  const { courseId } = body;
+  const body = (await req.json()) as {
+    courseId?: string;
+    type?: "thumbnail" | "video";
+    chapterId?: string;
+  };
+  const { courseId, type = "thumbnail", chapterId } = body;
 
   if (!courseId) {
     return NextResponse.json({ error: "courseId is required" }, { status: 400 });
@@ -34,6 +38,36 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Course not found" }, { status: 404 });
   }
 
+  if (type === "video") {
+    if (!chapterId) {
+      return NextResponse.json({ error: "chapterId is required for video upload" }, { status: 400 });
+    }
+
+    const chapter = await db.chapter.findFirst({
+      where: { id: chapterId, courseId },
+      select: { id: true },
+    });
+    if (!chapter) {
+      return NextResponse.json({ error: "Chapter not found" }, { status: 404 });
+    }
+
+    const folder = cloudinaryFolders.chapterVideo(courseId, chapterId);
+    const timestamp = Math.round(Date.now() / 1000);
+    const signature = cloudinary.utils.api_sign_request(
+      { timestamp, folder },
+      env.CLOUDINARY_API_SECRET,
+    );
+
+    return NextResponse.json({
+      signature,
+      timestamp,
+      folder,
+      apiKey: env.CLOUDINARY_API_KEY,
+      cloudName: env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+    });
+  }
+
+  // Default: thumbnail
   const folder = cloudinaryFolders.courseThumbnail(courseId);
   const timestamp = Math.round(Date.now() / 1000);
   const signature = cloudinary.utils.api_sign_request(
