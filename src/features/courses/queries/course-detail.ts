@@ -65,3 +65,12 @@ export async function getEnrollmentStatus(userId: string, courseId: string) {
 }
 
 export type CourseDetail = NonNullable<Awaited<ReturnType<typeof getCourseBySlug>>>;
+
+export async function getUserReview(userId: string, courseId: string) {
+  return db.review.findUnique({
+    where: { userId_courseId: { userId, courseId } },
+    select: { id: true, rating: true, body: true },
+  });
+}
+
+export type UserReview = NonNullable<Awaited<ReturnType<typeof getUserReview>>>;

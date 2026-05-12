@@ -11,6 +11,7 @@ import { CourseWhatYouLearn } from "@/features/courses/components/course-what-yo
 import {
   getCourseBySlug,
   getEnrollmentStatus,
+  getUserReview,
 } from "@/features/courses/queries/course-detail";
 
 interface PageProps {
@@ -37,6 +38,9 @@ export default async function CourseDetailPage({ params }: PageProps) {
   const isEnrolled = user
     ? await getEnrollmentStatus(user.id, course.id)
     : false;
+
+  const userReview =
+    user && isEnrolled ? await getUserReview(user.id, course.id) : null;
 
   const isLoggedIn = !!user;
 
@@ -79,7 +83,13 @@ export default async function CourseDetailPage({ params }: PageProps) {
 
             <CourseCurriculum chapters={course.chapters} />
             <CourseInstructor instructor={course.instructor} />
-            <CourseReviews reviews={course.reviews} avgRating={course.avgRating} />
+            <CourseReviews
+              reviews={course.reviews}
+              avgRating={course.avgRating}
+              courseId={course.id}
+              isEnrolled={isEnrolled}
+              userReview={userReview}
+            />
           </div>
 
           {/* Sticky sidebar — desktop only */}
