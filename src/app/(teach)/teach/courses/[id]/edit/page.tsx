@@ -3,22 +3,16 @@ import Link from "next/link";
 import { ChevronLeft, ExternalLink } from "lucide-react";
 
 import { requireAuth } from "@/lib/session";
-import {
-  getCourseForEdit,
-  getInstructorCategories,
-} from "@/features/instructor/queries/courses";
+import { getCourseForEdit, getInstructorCategories } from "@/features/instructor/queries/courses";
 import { getCourseChapters } from "@/features/instructor/queries/chapters";
+import { getCourseAttachments } from "@/features/instructor/queries/attachments";
 import { EditCourseForm } from "@/features/instructor/components/edit-course-form";
 import { ThumbnailUploader } from "@/features/instructor/components/thumbnail-uploader";
 import { PublishToggle } from "@/features/instructor/components/publish-toggle";
 import { ChaptersList } from "@/features/instructor/components/chapters-list";
 import { AddChapterForm } from "@/features/instructor/components/add-chapter-form";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { AttachmentsManager } from "@/features/instructor/components/attachments-manager";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DeleteCourseButton } from "@/features/instructor/components/delete-course-button";
 
@@ -38,10 +32,11 @@ export default async function EditCoursePage({ params }: EditCoursePageProps) {
   const { id } = await params;
   const user = await requireAuth();
 
-  const [course, categories, chapters] = await Promise.all([
+  const [course, categories, chapters, attachments] = await Promise.all([
     getCourseForEdit(id, user.id),
     getInstructorCategories(),
     getCourseChapters(id, user.id),
+    getCourseAttachments(id, user.id),
   ]);
 
   if (!course) notFound();
@@ -59,11 +54,14 @@ export default async function EditCoursePage({ params }: EditCoursePageProps) {
             My Courses
           </Link>
           <span className="text-muted-foreground">/</span>
-          <span className="max-w-[220px] truncate text-sm font-medium">{course.title}</span>
+          <span className="max-w-55 truncate text-sm font-medium">{course.title}</span>
         </div>
 
         <div className="flex items-center gap-2">
-          <Badge variant={course.status === "PUBLISHED" ? "default" : "outline"} className="text-xs">
+          <Badge
+            variant={course.status === "PUBLISHED" ? "default" : "outline"}
+            className="text-xs"
+          >
             {course.status === "PUBLISHED" ? "Published" : "Draft"}
           </Badge>
           {course.status === "PUBLISHED" && (
@@ -112,6 +110,16 @@ export default async function EditCoursePage({ params }: EditCoursePageProps) {
               <AddChapterForm courseId={course.id} />
             </CardContent>
           </Card>
+
+          {/* Resources */}
+          <Card>
+            <CardHeader className="border-b">
+              <CardTitle>Downloadable resources</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-5">
+              <AttachmentsManager courseId={course.id} initialAttachments={attachments} />
+            </CardContent>
+          </Card>
         </div>
 
         {/* Right: Sidebar */}
@@ -131,10 +139,10 @@ export default async function EditCoursePage({ params }: EditCoursePageProps) {
             <CardHeader className="border-b">
               <CardTitle>Course info</CardTitle>
             </CardHeader>
-            <CardContent className="pt-4 space-y-2 text-sm">
+            <CardContent className="space-y-2 pt-4 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Slug</span>
-                <span className="font-mono text-xs break-all text-right max-w-[160px]">
+                <span className="max-w-40 text-right font-mono text-xs break-all">
                   {course.slug}
                 </span>
               </div>

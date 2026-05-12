@@ -17,6 +17,14 @@ export type PlayerCourse = {
   slug: string;
 };
 
+export type PlayerAttachment = {
+  id: string;
+  name: string;
+  url: string;
+  fileSize: number | null;
+  mimeType: string | null;
+};
+
 export type PlayerData = {
   course: PlayerCourse;
   chapter: {
@@ -29,6 +37,8 @@ export type PlayerData = {
     isCompleted: boolean;
   };
   chapters: PlayerChapter[];
+  attachments: PlayerAttachment[];
+  note: string | null;
   isEnrolled: boolean;
   canWatch: boolean;
 };
@@ -54,6 +64,10 @@ export async function getCoursePlayer(
           videoDuration: true,
           isFree: true,
         },
+      },
+      attachments: {
+        select: { id: true, name: true, url: true, fileSize: true, mimeType: true },
+        orderBy: { createdAt: "asc" },
       },
     },
   });
@@ -82,11 +96,19 @@ export async function getCoursePlayer(
   const isEnrolled = !!enrollment;
   const canWatch = isEnrolled || chapter.isFree;
 
-  // Fetch completed chapter IDs for this student
-  const progressRecords = await db.progress.findMany({
-    where: { userId, chapter: { courseId: course.id } },
-    select: { chapterId: true, isCompleted: true },
-  });
+  // Fetch note + progress in parallel
+  const [noteRecord, progressRecords] = await Promise.all([
+    isEnrolled
+      ? db.note.findUnique({
+          where: { userId_chapterId: { userId, chapterId } },
+          select: { body: true },
+        })
+      : Promise.resolve(null),
+    db.progress.findMany({
+      where: { userId, chapter: { courseId: course.id } },
+      select: { chapterId: true, isCompleted: true },
+    }),
+  ]);
   const progressMap = new Map(progressRecords.map((p) => [p.chapterId, p.isCompleted]));
 
   const chapterProgress = progressMap.get(chapterId) ?? false;
@@ -100,6 +122,8 @@ export async function getCoursePlayer(
     course: { id: course.id, title: course.title, slug: course.slug },
     chapter: { ...chapter, isCompleted: chapterProgress },
     chapters,
+    attachments: course.attachments,
+    note: noteRecord?.body ?? null,
     isEnrolled,
     canWatch,
   };

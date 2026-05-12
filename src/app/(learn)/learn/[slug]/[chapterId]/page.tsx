@@ -7,6 +7,7 @@ import { getCoursePlayer } from "@/features/student/queries/player";
 import { VideoPlayer } from "@/features/student/components/video-player";
 import { PlayerSidebar } from "@/features/student/components/player-sidebar";
 import { ChapterNavigation } from "@/features/student/components/chapter-navigation";
+import { PlayerTabs } from "@/features/student/components/player-tabs";
 
 interface PlayerPageProps {
   params: Promise<{ slug: string; chapterId: string }>;
@@ -79,6 +80,15 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
                 </p>
               )}
             </div>
+
+            {/* Notes + Resources tabs */}
+            <PlayerTabs
+              chapterId={chapterId}
+              courseSlug={slug}
+              note={data.note}
+              attachments={data.attachments}
+              isEnrolled={data.isEnrolled}
+            />
 
             {/* Navigation */}
             <ChapterNavigation

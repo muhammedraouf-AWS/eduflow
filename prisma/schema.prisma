@@ -64,6 +64,7 @@ model User {
   progress          Progress[]
   reviews           Review[]
   purchases         Purchase[]
+  notes             Note[]
 
   @@index([email])
 }
@@ -212,6 +213,7 @@ model Chapter {
   courseId String
   course   Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
   progress Progress[]
+  notes    Note[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -266,6 +268,24 @@ model Progress {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
 
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, chapterId])
+  @@index([userId])
+  @@index([chapterId])
+}
+
+// Per-chapter scratchpad note for a student. One note per chapter per user (upsert).
+model Note {
+  id        String  @id @default(cuid())
+  body      String  @db.Text
+  userId    String
+  chapterId String
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([userId, chapterId])

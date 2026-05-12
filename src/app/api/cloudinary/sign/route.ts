@@ -13,7 +13,7 @@ export async function POST(req: Request) {
 
   const body = (await req.json()) as {
     courseId?: string;
-    type?: "thumbnail" | "video";
+    type?: "thumbnail" | "video" | "attachment";
     chapterId?: string;
   };
   const { courseId, type = "thumbnail", chapterId } = body;
@@ -58,6 +58,22 @@ export async function POST(req: Request) {
       env.CLOUDINARY_API_SECRET,
     );
 
+    return NextResponse.json({
+      signature,
+      timestamp,
+      folder,
+      apiKey: env.CLOUDINARY_API_KEY,
+      cloudName: env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+    });
+  }
+
+  if (type === "attachment") {
+    const folder = cloudinaryFolders.courseResources(courseId);
+    const timestamp = Math.round(Date.now() / 1000);
+    const signature = cloudinary.utils.api_sign_request(
+      { timestamp, folder },
+      env.CLOUDINARY_API_SECRET,
+    );
     return NextResponse.json({
       signature,
       timestamp,
