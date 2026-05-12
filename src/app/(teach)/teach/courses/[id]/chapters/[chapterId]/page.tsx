@@ -4,9 +4,11 @@ import { ChevronLeft } from "lucide-react";
 
 import { requireAuth } from "@/lib/session";
 import { getChapterForEdit } from "@/features/instructor/queries/chapters";
+import { getChapterQuiz } from "@/features/instructor/queries/quiz";
 import { ChapterEditForm } from "@/features/instructor/components/chapter-edit-form";
 import { VideoUploader } from "@/features/instructor/components/video-uploader";
 import { ChapterStatusCard } from "@/features/instructor/components/chapter-status-card";
+import { QuizManager } from "@/features/instructor/components/quiz-manager";
 import {
   Card,
   CardContent,
@@ -32,6 +34,8 @@ export default async function ChapterEditPage({ params }: ChapterEditPageProps) 
 
   const chapter = await getChapterForEdit(chapterId, courseId, user.id);
   if (!chapter) notFound();
+
+  const quiz = await getChapterQuiz(chapterId);
 
   return (
     <div className="space-y-6">
@@ -76,14 +80,23 @@ export default async function ChapterEditPage({ params }: ChapterEditPageProps) 
           </Card>
         </div>
 
-        {/* Right: Status card */}
-        <div>
+        {/* Right: Status card + Quiz */}
+        <div className="space-y-6">
           <ChapterStatusCard
             chapterId={chapterId}
             courseId={courseId}
             isPublished={chapter.isPublished}
             isFree={chapter.isFree}
           />
+
+          <Card>
+            <CardHeader className="border-b">
+              <CardTitle>Quiz</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-5">
+              <QuizManager chapterId={chapterId} courseId={courseId} quiz={quiz} />
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

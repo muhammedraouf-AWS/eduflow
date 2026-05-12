@@ -81,13 +81,15 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
               )}
             </div>
 
-            {/* Notes + Resources tabs */}
+            {/* Quiz + Notes + Resources tabs */}
             <PlayerTabs
               chapterId={chapterId}
               courseSlug={slug}
               note={data.note}
               attachments={data.attachments}
               isEnrolled={data.isEnrolled}
+              quiz={data.quiz}
+              latestAttempt={data.latestAttempt}
             />
 
             {/* Navigation */}

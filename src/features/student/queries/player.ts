@@ -25,6 +25,23 @@ export type PlayerAttachment = {
   mimeType: string | null;
 };
 
+export type PlayerQuiz = {
+  id: string;
+  passMark: number;
+  questions: {
+    id: string;
+    body: string;
+    position: number;
+    options: { id: string; body: string; position: number }[];
+  }[];
+};
+
+export type PlayerLatestAttempt = {
+  score: number;
+  passed: boolean;
+  answers: unknown;
+};
+
 export type PlayerData = {
   course: PlayerCourse;
   chapter: {
@@ -41,6 +58,8 @@ export type PlayerData = {
   note: string | null;
   isEnrolled: boolean;
   canWatch: boolean;
+  quiz: PlayerQuiz | null;
+  latestAttempt: PlayerLatestAttempt | null;
 };
 
 export async function getCoursePlayer(
@@ -83,6 +102,25 @@ export async function getCoursePlayer(
       videoUrl: true,
       videoDuration: true,
       isFree: true,
+      // Quiz without isCorrect — never expose correct answers to the client
+      quiz: {
+        select: {
+          id: true,
+          passMark: true,
+          questions: {
+            orderBy: { position: "asc" },
+            select: {
+              id: true,
+              body: true,
+              position: true,
+              options: {
+                orderBy: { position: "asc" },
+                select: { id: true, body: true, position: true },
+              },
+            },
+          },
+        },
+      },
     },
   });
 
@@ -96,8 +134,8 @@ export async function getCoursePlayer(
   const isEnrolled = !!enrollment;
   const canWatch = isEnrolled || chapter.isFree;
 
-  // Fetch note + progress in parallel
-  const [noteRecord, progressRecords] = await Promise.all([
+  // Fetch note, progress, and latest quiz attempt in parallel
+  const [noteRecord, progressRecords, latestAttempt] = await Promise.all([
     isEnrolled
       ? db.note.findUnique({
           where: { userId_chapterId: { userId, chapterId } },
@@ -108,24 +146,34 @@ export async function getCoursePlayer(
       where: { userId, chapter: { courseId: course.id } },
       select: { chapterId: true, isCompleted: true },
     }),
+    isEnrolled && chapter.quiz
+      ? db.quizAttempt.findFirst({
+          where: { quizId: chapter.quiz.id, userId },
+          orderBy: { createdAt: "desc" },
+          select: { score: true, passed: true, answers: true },
+        })
+      : Promise.resolve(null),
   ]);
+
   const progressMap = new Map(progressRecords.map((p) => [p.chapterId, p.isCompleted]));
-
   const chapterProgress = progressMap.get(chapterId) ?? false;
-
   const chapters: PlayerChapter[] = course.chapters.map((ch) => ({
     ...ch,
     isCompleted: progressMap.get(ch.id) ?? false,
   }));
 
+  const { quiz: chapterQuiz, ...chapterFields } = chapter;
+
   return {
     course: { id: course.id, title: course.title, slug: course.slug },
-    chapter: { ...chapter, isCompleted: chapterProgress },
+    chapter: { ...chapterFields, isCompleted: chapterProgress },
     chapters,
     attachments: course.attachments,
     note: noteRecord?.body ?? null,
     isEnrolled,
     canWatch,
+    quiz: chapterQuiz ?? null,
+    latestAttempt: latestAttempt ?? null,
   };
 }
 

@@ -65,6 +65,7 @@ model User {
   reviews           Review[]
   purchases         Purchase[]
   notes             Note[]
+  quizAttempts      QuizAttempt[]
 
   @@index([email])
 }
@@ -214,6 +215,7 @@ model Chapter {
   course   Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
   progress Progress[]
   notes    Note[]
+  quiz     Quiz?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -311,6 +313,70 @@ model Review {
 
   @@unique([userId, courseId])
   @@index([courseId])
+}
+
+// One quiz per chapter. passMark is a percentage (0–100) required to pass.
+model Quiz {
+  id        String   @id @default(cuid())
+  chapterId String   @unique
+  passMark  Int      @default(70)
+
+  chapter   Chapter       @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  questions Question[]
+  attempts  QuizAttempt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// A single multiple-choice question belonging to a Quiz.
+model Question {
+  id       String @id @default(cuid())
+  quizId   String
+  body     String @db.Text
+  position Int
+
+  quiz    Quiz             @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  options QuestionOption[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([quizId])
+  @@index([quizId, position])
+}
+
+// One of 2–4 answer choices for a Question. Exactly one per question is correct.
+model QuestionOption {
+  id         String  @id @default(cuid())
+  questionId String
+  body       String
+  isCorrect  Boolean @default(false)
+  position   Int
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+// Records one student attempt at a Quiz.
+// answers is a JSON snapshot: [{ questionId, selectedOptionId }]
+model QuizAttempt {
+  id      String  @id @default(cuid())
+  quizId  String
+  userId  String
+  score   Int     // percentage 0–100
+  passed  Boolean
+  answers Json
+
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([quizId])
+  @@index([userId])
+  @@index([quizId, userId])
 }
 
 // Payment record created after Stripe confirms a charge (Phase 7).

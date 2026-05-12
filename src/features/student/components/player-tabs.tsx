@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
 
+import { cn } from "@/lib/utils";
 import { ChapterNotes } from "@/features/student/components/chapter-notes";
+import { ChapterQuiz } from "@/features/student/components/chapter-quiz";
 import { ChapterResources } from "@/features/student/components/chapter-resources";
-import type { PlayerAttachment } from "@/features/student/queries/player";
+import type { PlayerAttachment, PlayerLatestAttempt, PlayerQuiz } from "@/features/student/queries/player";
 
 interface PlayerTabsProps {
   chapterId: string;
@@ -13,9 +14,11 @@ interface PlayerTabsProps {
   note: string | null;
   attachments: PlayerAttachment[];
   isEnrolled: boolean;
+  quiz: PlayerQuiz | null;
+  latestAttempt: PlayerLatestAttempt | null;
 }
 
-type TabId = "notes" | "resources";
+type TabId = "quiz" | "notes" | "resources";
 
 export function PlayerTabs({
   chapterId,
@@ -23,15 +26,18 @@ export function PlayerTabs({
   note,
   attachments,
   isEnrolled,
+  quiz,
+  latestAttempt,
 }: PlayerTabsProps) {
   const tabs: { id: TabId; label: string }[] = [
+    ...(isEnrolled && quiz ? [{ id: "quiz" as TabId, label: "Quiz" }] : []),
     ...(isEnrolled ? [{ id: "notes" as TabId, label: "Notes" }] : []),
     ...(attachments.length > 0 ? [{ id: "resources" as TabId, label: "Resources" }] : []),
   ];
 
   const [activeTab, setActiveTab] = useState<TabId>(tabs[0]?.id ?? "notes");
 
-  // Reset to first tab when chapter changes
+  // Reset to first available tab when chapter changes
   useEffect(() => {
     if (tabs[0]) setActiveTab(tabs[0].id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -60,6 +66,9 @@ export function PlayerTabs({
       </div>
 
       {/* Tab content */}
+      {activeTab === "quiz" && isEnrolled && quiz && (
+        <ChapterQuiz quiz={quiz} latestAttempt={latestAttempt} />
+      )}
       {activeTab === "notes" && isEnrolled && (
         <ChapterNotes chapterId={chapterId} courseSlug={courseSlug} initialNote={note} />
       )}
