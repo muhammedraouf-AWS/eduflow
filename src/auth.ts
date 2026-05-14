@@ -38,11 +38,13 @@ export const { handlers, auth, signIn, signOut, unstable_update: updateSession }
             emailVerified: true,
             image: true,
             role: true,
+            suspended: true,
             hashedPassword: true,
           },
         });
 
         if (!user?.hashedPassword) return null;
+        if (user.suspended) return null;
 
         const isValid = await bcrypt.compare(
           parsed.data.password,
