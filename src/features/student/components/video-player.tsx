@@ -35,7 +35,19 @@ export function VideoPlayer({
         toast.error(result.error);
       } else {
         setIsCompleted(result.isCompleted);
-        toast.success(result.isCompleted ? "Marked as complete" : "Marked as incomplete");
+        if (result.certificateCode) {
+          toast.success("Course complete! Your certificate is ready.", {
+            action: {
+              label: "View Certificate",
+              onClick: () => {
+                window.location.href = `/certificates/${result.certificateCode}`;
+              },
+            },
+            duration: 8000,
+          });
+        } else {
+          toast.success(result.isCompleted ? "Marked as complete" : "Marked as incomplete");
+        }
       }
     });
   }
@@ -46,7 +58,19 @@ export function VideoPlayer({
       const result = await toggleProgressAction(chapterId, courseSlug);
       if ("isCompleted" in result && result.isCompleted) {
         setIsCompleted(true);
-        toast.success("Chapter completed!");
+        if (result.certificateCode) {
+          toast.success("Course complete! Your certificate is ready.", {
+            action: {
+              label: "View Certificate",
+              onClick: () => {
+                window.location.href = `/certificates/${result.certificateCode}`;
+              },
+            },
+            duration: 8000,
+          });
+        } else {
+          toast.success("Chapter completed!");
+        }
       }
     });
   }

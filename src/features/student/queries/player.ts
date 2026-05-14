@@ -60,6 +60,8 @@ export type PlayerData = {
   canWatch: boolean;
   quiz: PlayerQuiz | null;
   latestAttempt: PlayerLatestAttempt | null;
+  certificate: { code: string } | null;
+  isCourseComplete: boolean;
 };
 
 export async function getCoursePlayer(
@@ -134,8 +136,8 @@ export async function getCoursePlayer(
   const isEnrolled = !!enrollment;
   const canWatch = isEnrolled || chapter.isFree;
 
-  // Fetch note, progress, and latest quiz attempt in parallel
-  const [noteRecord, progressRecords, latestAttempt] = await Promise.all([
+  // Fetch note, progress, latest quiz attempt, and certificate in parallel
+  const [noteRecord, progressRecords, latestAttempt, certificateRecord] = await Promise.all([
     isEnrolled
       ? db.note.findUnique({
           where: { userId_chapterId: { userId, chapterId } },
@@ -153,6 +155,12 @@ export async function getCoursePlayer(
           select: { score: true, passed: true, answers: true },
         })
       : Promise.resolve(null),
+    isEnrolled
+      ? db.certificate.findUnique({
+          where: { userId_courseId: { userId, courseId: course.id } },
+          select: { code: true },
+        })
+      : Promise.resolve(null),
   ]);
 
   const progressMap = new Map(progressRecords.map((p) => [p.chapterId, p.isCompleted]));
@@ -161,6 +169,9 @@ export async function getCoursePlayer(
     ...ch,
     isCompleted: progressMap.get(ch.id) ?? false,
   }));
+
+  const isCourseComplete =
+    chapters.length > 0 && chapters.every((ch) => ch.isCompleted);
 
   const { quiz: chapterQuiz, ...chapterFields } = chapter;
 
@@ -174,6 +185,8 @@ export async function getCoursePlayer(
     canWatch,
     quiz: chapterQuiz ?? null,
     latestAttempt: latestAttempt ?? null,
+    certificate: certificateRecord ?? null,
+    isCourseComplete,
   };
 }
 

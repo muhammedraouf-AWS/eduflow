@@ -11,6 +11,7 @@ export type EnrolledCourse = {
   completedChapters: number;
   continueChapterId: string | null;
   instructorName: string | null;
+  certificateCode: string | null;
 };
 
 export async function getEnrolledCourses(userId: string): Promise<EnrolledCourse[]> {
@@ -31,6 +32,10 @@ export async function getEnrolledCourses(userId: string): Promise<EnrolledCourse
                 select: { isCompleted: true },
               },
             },
+          },
+          certificates: {
+            where: { userId },
+            select: { code: true },
           },
         },
       },
@@ -59,6 +64,7 @@ export async function getEnrolledCourses(userId: string): Promise<EnrolledCourse
       completedChapters,
       continueChapterId,
       instructorName: course.instructor.user.name,
+      certificateCode: course.certificates[0]?.code ?? null,
     };
   });
 }

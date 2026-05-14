@@ -66,6 +66,7 @@ model User {
   purchases         Purchase[]
   notes             Note[]
   quizAttempts      QuizAttempt[]
+  certificates      Certificate[]
 
   @@index([email])
 }
@@ -181,11 +182,12 @@ model Course {
 
   category    Category?         @relation(fields: [categoryId], references: [id])
   instructor  InstructorProfile @relation(fields: [instructorId], references: [id])
-  chapters    Chapter[]
-  attachments Attachment[]
-  enrollments Enrollment[]
-  reviews     Review[]
-  purchases   Purchase[]
+  chapters     Chapter[]
+  attachments  Attachment[]
+  enrollments  Enrollment[]
+  reviews      Review[]
+  purchases    Purchase[]
+  certificates Certificate[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -377,6 +379,24 @@ model QuizAttempt {
   @@index([quizId])
   @@index([userId])
   @@index([quizId, userId])
+}
+
+// Issued once a student completes all published chapters of a course.
+// code is a public random hex token used in the shareable URL.
+model Certificate {
+  id       String   @id @default(cuid())
+  // 32-char hex token — used in /certificates/[code]
+  code     String   @unique
+  userId   String
+  courseId String
+  issuedAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
 }
 
 // Payment record created after Stripe confirms a charge (Phase 7).

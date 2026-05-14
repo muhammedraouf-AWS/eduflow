@@ -8,6 +8,7 @@ import { VideoPlayer } from "@/features/student/components/video-player";
 import { PlayerSidebar } from "@/features/student/components/player-sidebar";
 import { ChapterNavigation } from "@/features/student/components/chapter-navigation";
 import { PlayerTabs } from "@/features/student/components/player-tabs";
+import { CourseCompletionBanner } from "@/features/student/components/course-completion-banner";
 
 interface PlayerPageProps {
   params: Promise<{ slug: string; chapterId: string }>;
@@ -91,6 +92,14 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
               quiz={data.quiz}
               latestAttempt={data.latestAttempt}
             />
+
+            {/* Course completion banner */}
+            {data.isCourseComplete && data.certificate && (
+              <CourseCompletionBanner
+                certificateCode={data.certificate.code}
+                courseTitle={data.course.title}
+              />
+            )}
 
             {/* Navigation */}
             <ChapterNavigation

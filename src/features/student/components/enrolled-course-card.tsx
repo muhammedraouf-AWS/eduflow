@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { BookOpen, CheckCircle2 } from "lucide-react";
+import { Award, BookOpen, CheckCircle2 } from "lucide-react";
 
 import type { EnrolledCourse } from "@/features/student/queries/dashboard";
 
@@ -20,12 +20,9 @@ export function EnrolledCourseCard({ course }: EnrolledCourseCardProps) {
     : `/courses/${course.slug}`;
 
   return (
-    <Link
-      href={href}
-      className="group flex flex-col overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-md"
-    >
-      {/* Thumbnail */}
-      <div className="relative aspect-video w-full bg-muted">
+    <div className="group flex flex-col overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-md">
+      {/* Thumbnail — links to player */}
+      <Link href={href} className="relative block aspect-video w-full bg-muted">
         {course.thumbnailUrl ? (
           <Image
             src={course.thumbnailUrl}
@@ -44,11 +41,15 @@ export function EnrolledCourseCard({ course }: EnrolledCourseCardProps) {
             <CheckCircle2 className="size-10 text-emerald-400" />
           </div>
         )}
-      </div>
+      </Link>
 
       {/* Info */}
       <div className="flex flex-1 flex-col gap-2 p-4">
-        <h3 className="line-clamp-2 font-semibold leading-snug">{course.title}</h3>
+        <Link href={href}>
+          <h3 className="line-clamp-2 font-semibold leading-snug hover:text-primary transition-colors">
+            {course.title}
+          </h3>
+        </Link>
         {course.instructorName && (
           <p className="text-xs text-muted-foreground">{course.instructorName}</p>
         )}
@@ -70,7 +71,18 @@ export function EnrolledCourseCard({ course }: EnrolledCourseCardProps) {
             />
           </div>
         </div>
+
+        {/* Certificate button (only when complete + cert exists) */}
+        {isComplete && course.certificateCode && (
+          <Link
+            href={`/certificates/${course.certificateCode}`}
+            className="mt-2 flex items-center justify-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition-colors dark:border-emerald-800/40 dark:bg-emerald-950/30 dark:text-emerald-400 dark:hover:bg-emerald-950/50"
+          >
+            <Award className="size-3.5" />
+            View Certificate
+          </Link>
+        )}
       </div>
-    </Link>
+    </div>
   );
 }

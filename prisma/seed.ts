@@ -113,6 +113,7 @@ async function main() {
 
   // ── 1. Wipe existing data (reverse dependency order) ──────────────────────
   console.log("  → Clearing existing data...");
+  await prisma.certificate.deleteMany();
   await prisma.progress.deleteMany();
   await prisma.purchase.deleteMany();
   await prisma.review.deleteMany();
