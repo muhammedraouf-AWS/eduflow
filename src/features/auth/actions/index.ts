@@ -24,6 +24,14 @@ export async function loginFormAction(
     return { error: "Invalid email or password" };
   }
 
+  const account = await db.user.findUnique({
+    where: { email: parsed.data.email },
+    select: { suspended: true },
+  });
+  if (account?.suspended) {
+    return { error: "Your account has been suspended. Please contact support." };
+  }
+
   try {
     await signIn("credentials", {
       email: parsed.data.email,
