@@ -29,19 +29,18 @@ export async function getInstructorAnalytics(userId: string) {
 
     db.course.findMany({
       where: { instructorId: profile.id },
-      orderBy: { totalStudents: "desc" },
       select: {
         id: true,
         title: true,
         slug: true,
         status: true,
-        totalStudents: true,
         avgRating: true,
         price: true,
         _count: {
           select: {
             reviews: true,
             chapters: { where: { isPublished: true } },
+            enrollments: true,
           },
         },
         purchases: { select: { amount: true } },
@@ -111,21 +110,23 @@ export async function getInstructorAnalytics(userId: string) {
   }));
 
   // Course performance table
-  const coursePerformance = courses.map((c) => ({
-    id: c.id,
-    title: c.title,
-    slug: c.slug,
-    status: c.status as string,
-    totalStudents: c.totalStudents,
-    avgRating: c.avgRating,
-    reviewCount: c._count.reviews,
-    publishedChapters: c._count.chapters,
-    price: c.price ? Number(c.price) : null,
-    revenue: c.purchases.reduce((sum, p) => sum + Number(p.amount), 0),
-  }));
+  const coursePerformance = courses
+    .map((c) => ({
+      id: c.id,
+      title: c.title,
+      slug: c.slug,
+      status: c.status as string,
+      totalStudents: c._count.enrollments,
+      avgRating: c.avgRating,
+      reviewCount: c._count.reviews,
+      publishedChapters: c._count.chapters,
+      price: c.price ? Number(c.price) : null,
+      revenue: c.purchases.reduce((sum, p) => sum + Number(p.amount), 0),
+    }))
+    .sort((a, b) => b.totalStudents - a.totalStudents);
 
   const totalRevenue = coursePerformance.reduce((sum, c) => sum + c.revenue, 0);
-  const totalStudents = courses.reduce((sum, c) => sum + c.totalStudents, 0);
+  const totalStudents = coursePerformance.reduce((sum, c) => sum + c.totalStudents, 0);
 
   return {
     enrollmentTrend,

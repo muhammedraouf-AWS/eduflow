@@ -26,7 +26,7 @@ function buildOrderBy(sort: SortOption) {
     case "price-high":
       return { price: "desc" as const };
     default:
-      return { totalStudents: "desc" as const };
+      return { enrollments: { _count: "desc" as const } };
   }
 }
 
@@ -58,8 +58,8 @@ export async function getCourses(filters: CoursesFilter = {}) {
         thumbnailUrl: true,
         price: true,
         avgRating: true,
-        totalStudents: true,
         level: true,
+        _count: { select: { enrollments: true } },
         category: { select: { name: true, color: true, slug: true } },
         instructor: {
           select: { user: { select: { name: true, image: true } } },
@@ -69,7 +69,11 @@ export async function getCourses(filters: CoursesFilter = {}) {
     db.course.count({ where }),
   ]);
 
-  return { courses, total, pages: Math.ceil(total / PAGE_SIZE) };
+  return {
+    courses: courses.map((c) => ({ ...c, totalStudents: c._count.enrollments })),
+    total,
+    pages: Math.ceil(total / PAGE_SIZE),
+  };
 }
 
 export async function getCourseFilterMeta() {

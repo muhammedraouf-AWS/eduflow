@@ -265,7 +265,6 @@ async function main() {
           twitter: "sarahchendev",
           linkedin: "sarah-chen-dev",
           avatarUrl: sarah.image,
-          totalStudents: 127483,
         },
       }),
       prisma.instructorProfile.create({
@@ -277,7 +276,6 @@ async function main() {
           twitter: "marcusjohnsonml",
           linkedin: "marcus-johnson-ml",
           avatarUrl: marcus.image,
-          totalStudents: 94210,
         },
       }),
       prisma.instructorProfile.create({
@@ -289,7 +287,6 @@ async function main() {
           twitter: "priyacloudarch",
           linkedin: "priya-patel-aws",
           avatarUrl: priya.image,
-          totalStudents: 83742,
         },
       }),
       prisma.instructorProfile.create({
@@ -301,7 +298,6 @@ async function main() {
           twitter: "alexrivdesign",
           linkedin: "alex-rivera-design",
           avatarUrl: alex.image,
-          totalStudents: 61894,
         },
       }),
     ]);
@@ -362,8 +358,6 @@ async function main() {
         "Write tests with Vitest and Testing Library",
         "Deploy full-stack apps to Vercel",
       ],
-      avgRating: 4.8,
-      totalStudents: 48291,
       publishedAt: new Date("2024-03-15"),
       instructorId: sarahProfile.id,
       categoryId: catMap["web-development"]!.id,
@@ -432,8 +426,6 @@ async function main() {
         "Master advanced caching and revalidation patterns",
         "Deploy production apps to Vercel with CI/CD",
       ],
-      avgRating: 4.9,
-      totalStudents: 31742,
       publishedAt: new Date("2024-08-01"),
       instructorId: sarahProfile.id,
       categoryId: catMap["web-development"]!.id,
@@ -502,8 +494,6 @@ async function main() {
         "Write truly asynchronous code with confidence",
         "Use advanced TypeScript generics and type utilities",
       ],
-      avgRating: 4.7,
-      totalStudents: 22104,
       publishedAt: new Date("2024-01-20"),
       instructorId: sarahProfile.id,
       categoryId: catMap["web-development"]!.id,
@@ -566,8 +556,6 @@ async function main() {
         "Build neural networks with TensorFlow and Keras",
         "Deploy ML models as REST APIs",
       ],
-      avgRating: 4.8,
-      totalStudents: 61943,
       publishedAt: new Date("2024-02-10"),
       instructorId: marcusProfile.id,
       categoryId: catMap["data-science-ai"]!.id,
@@ -636,8 +624,6 @@ async function main() {
         "Understand and implement diffusion models",
         "Read and reproduce ML research papers",
       ],
-      avgRating: 4.9,
-      totalStudents: 18432,
       publishedAt: new Date("2024-06-15"),
       instructorId: marcusProfile.id,
       categoryId: catMap["data-science-ai"]!.id,
@@ -700,8 +686,6 @@ async function main() {
         "Implement serverless architectures with Lambda and API Gateway",
         "Optimize costs using AWS pricing models",
       ],
-      avgRating: 4.7,
-      totalStudents: 43821,
       publishedAt: new Date("2024-04-01"),
       instructorId: priyaProfile.id,
       categoryId: catMap["cloud-devops"]!.id,
@@ -770,8 +754,6 @@ async function main() {
         "Deploy GitOps workflows with ArgoCD",
         "Monitor containerized apps with Prometheus & Grafana",
       ],
-      avgRating: 4.8,
-      totalStudents: 29104,
       publishedAt: new Date("2024-05-20"),
       instructorId: priyaProfile.id,
       categoryId: catMap["cloud-devops"]!.id,
@@ -834,8 +816,6 @@ async function main() {
         "Publish apps to the App Store",
         "Implement push notifications and background tasks",
       ],
-      avgRating: 4.8,
-      totalStudents: 24731,
       publishedAt: new Date("2024-09-10"),
       instructorId: alexProfile.id,
       categoryId: catMap["mobile-development"]!.id,
@@ -898,8 +878,6 @@ async function main() {
         "Create portfolio-worthy case studies",
         "Prepare for UX design job interviews",
       ],
-      avgRating: 4.6,
-      totalStudents: 19842,
       publishedAt: new Date("2024-07-05"),
       instructorId: alexProfile.id,
       categoryId: catMap["design-ux"]!.id,
@@ -962,8 +940,6 @@ async function main() {
         "Write professional security assessment reports",
         "Prepare for CEH and OSCP certifications",
       ],
-      avgRating: 4.7,
-      totalStudents: 15293,
       publishedAt: new Date("2024-10-15"),
       instructorId: priyaProfile.id,
       categoryId: catMap["cybersecurity"]!.id,
@@ -1026,8 +1002,6 @@ async function main() {
         "Integrate Firebase for auth, database, and storage",
         "Publish apps to both App Store and Google Play",
       ],
-      avgRating: 4.7,
-      totalStudents: 22841,
       publishedAt: new Date("2024-11-01"),
       instructorId: marcusProfile.id,
       categoryId: catMap["mobile-development"]!.id,
@@ -1090,8 +1064,6 @@ async function main() {
         "Write types that improve developer experience",
         "Contribute to and maintain large TypeScript codebases",
       ],
-      avgRating: null,
-      totalStudents: 0,
       publishedAt: null,
       instructorId: sarahProfile.id,
       categoryId: catMap["programming-languages"]!.id,
@@ -1202,6 +1174,32 @@ async function main() {
 
   await prisma.enrollment.createMany({ data: enrollmentPairs });
   console.log(`  ✓ ${enrollmentPairs.length} enrollments\n`);
+
+  // Recompute denormalized totalStudents from actual enrollments
+  const courseEnrollmentCounts = await prisma.enrollment.groupBy({
+    by: ["courseId"],
+    _count: { courseId: true },
+  });
+  await Promise.all(
+    courseEnrollmentCounts.map((ce) =>
+      prisma.course.update({
+        where: { id: ce.courseId },
+        data: { totalStudents: ce._count.courseId },
+      }),
+    ),
+  );
+  const instructorProfiles = await prisma.instructorProfile.findMany({ select: { id: true } });
+  await Promise.all(
+    instructorProfiles.map(async (ip) => {
+      const count = await prisma.enrollment.count({
+        where: { course: { instructorId: ip.id } },
+      });
+      return prisma.instructorProfile.update({
+        where: { id: ip.id },
+        data: { totalStudents: count },
+      });
+    }),
+  );
 
   // ── 8. Progress ─────────────────────────────────────────────────────────
   console.log("  → Seeding progress records...");
@@ -1349,6 +1347,21 @@ async function main() {
 
   await prisma.review.createMany({ data: reviews });
   console.log(`  ✓ ${reviews.length} reviews\n`);
+
+  // Recompute denormalized avgRating from actual reviews
+  const courseIds = await prisma.course.findMany({ select: { id: true } });
+  await Promise.all(
+    courseIds.map(async ({ id }) => {
+      const agg = await prisma.review.aggregate({
+        where: { courseId: id },
+        _avg: { rating: true },
+      });
+      return prisma.course.update({
+        where: { id },
+        data: { avgRating: agg._avg.rating },
+      });
+    }),
+  );
 
   // ── 10. Summary ────────────────────────────────────────────────────────
   console.log("──────────────────────────────────────────");

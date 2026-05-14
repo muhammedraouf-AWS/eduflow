@@ -1,9 +1,9 @@
 import { db } from "@/lib/db";
 
 export async function getFeaturedCourses() {
-  return db.course.findMany({
+  const courses = await db.course.findMany({
     where: { status: "PUBLISHED" },
-    orderBy: [{ totalStudents: "desc" }, { avgRating: "desc" }],
+    orderBy: [{ enrollments: { _count: "desc" } }, { avgRating: "desc" }],
     take: 8,
     select: {
       id: true,
@@ -13,8 +13,8 @@ export async function getFeaturedCourses() {
       thumbnailUrl: true,
       price: true,
       avgRating: true,
-      totalStudents: true,
       level: true,
+      _count: { select: { enrollments: true } },
       category: { select: { name: true, color: true, slug: true } },
       instructor: {
         select: {
@@ -23,6 +23,7 @@ export async function getFeaturedCourses() {
       },
     },
   });
+  return courses.map((c) => ({ ...c, totalStudents: c._count.enrollments }));
 }
 
 export async function getCategories() {

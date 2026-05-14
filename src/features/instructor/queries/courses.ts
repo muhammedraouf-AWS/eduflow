@@ -19,9 +19,9 @@ export async function getInstructorCourses(userId: string) {
       status: true,
       thumbnailUrl: true,
       price: true,
-      totalStudents: true,
       updatedAt: true,
       category: { select: { name: true, color: true } },
+      _count: { select: { enrollments: true } },
     },
   });
 

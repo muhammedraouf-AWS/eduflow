@@ -15,7 +15,7 @@ export async function getInstructorOverview(userId: string) {
 
   if (!profile) return null;
 
-  const [courseStats, publishedCount, draftCount, recentEnrollments, topCourses] =
+  const [courseStats, publishedCount, draftCount, totalStudents, recentEnrollments, topCourses] =
     await Promise.all([
       db.course.aggregate({
         where: { instructorId: profile.id },
@@ -24,6 +24,7 @@ export async function getInstructorOverview(userId: string) {
       }),
       db.course.count({ where: { instructorId: profile.id, status: "PUBLISHED" } }),
       db.course.count({ where: { instructorId: profile.id, status: "DRAFT" } }),
+      db.enrollment.count({ where: { course: { instructorId: profile.id } } }),
       db.enrollment.findMany({
         where: { course: { instructorId: profile.id } },
         orderBy: { createdAt: "desc" },
@@ -36,7 +37,7 @@ export async function getInstructorOverview(userId: string) {
       }),
       db.course.findMany({
         where: { instructorId: profile.id },
-        orderBy: { totalStudents: "desc" },
+        orderBy: { enrollments: { _count: "desc" } },
         take: 5,
         select: {
           id: true,
@@ -44,23 +45,26 @@ export async function getInstructorOverview(userId: string) {
           slug: true,
           thumbnailUrl: true,
           status: true,
-          totalStudents: true,
           avgRating: true,
           price: true,
+          _count: { select: { enrollments: true } },
         },
       }),
     ]);
 
   return {
     stats: {
-      totalStudents: profile.totalStudents,
+      totalStudents,
       totalCourses: courseStats._count.id,
       publishedCourses: publishedCount,
       draftCourses: draftCount,
       avgRating: courseStats._avg.avgRating,
     },
     recentEnrollments,
-    topCourses,
+    topCourses: topCourses.map((c) => ({
+      ...c,
+      totalStudents: c._count.enrollments,
+    })),
   };
 }
 

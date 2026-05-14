@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 
 export async function getCourseBySlug(slug: string) {
-  return db.course.findUnique({
+  const course = await db.course.findUnique({
     where: { slug, status: "PUBLISHED" },
     select: {
       id: true,
@@ -16,8 +16,8 @@ export async function getCourseBySlug(slug: string) {
       requirements: true,
       objectives: true,
       avgRating: true,
-      totalStudents: true,
       publishedAt: true,
+      _count: { select: { enrollments: true } },
       category: { select: { name: true, color: true, slug: true } },
       instructor: {
         select: {
@@ -25,7 +25,6 @@ export async function getCourseBySlug(slug: string) {
           bio: true,
           headline: true,
           avatarUrl: true,
-          totalStudents: true,
           _count: { select: { courses: { where: { status: "PUBLISHED" } } } },
           user: { select: { name: true, image: true } },
         },
@@ -54,6 +53,21 @@ export async function getCourseBySlug(slug: string) {
       },
     },
   });
+
+  if (!course) return null;
+
+  const instructorStudents = await db.enrollment.count({
+    where: { course: { instructorId: course.instructor.id } },
+  });
+
+  return {
+    ...course,
+    totalStudents: course._count.enrollments,
+    instructor: {
+      ...course.instructor,
+      totalStudents: instructorStudents,
+    },
+  };
 }
 
 export async function getEnrollmentStatus(userId: string, courseId: string) {

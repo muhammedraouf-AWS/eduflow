@@ -108,7 +108,7 @@ export function InstructorCoursesTable({ courses }: InstructorCoursesTableProps)
 
             {/* Students */}
             <span className="hidden text-sm text-muted-foreground lg:block">
-              {course.totalStudents.toLocaleString()}
+              {course._count.enrollments.toLocaleString()}
             </span>
 
             {/* Updated */}
