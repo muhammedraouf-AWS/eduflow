@@ -58,6 +58,40 @@ export async function getCourseCertificate(
   return cert ?? null;
 }
 
+/** Fetch all certificates earned by a student, newest first. */
+export async function getStudentCertificates(userId: string) {
+  const certs = await db.certificate.findMany({
+    where: { userId },
+    orderBy: { issuedAt: "desc" },
+    select: {
+      code: true,
+      issuedAt: true,
+      course: {
+        select: {
+          title: true,
+          slug: true,
+          thumbnailUrl: true,
+          instructor: { select: { user: { select: { name: true } } } },
+          category: { select: { name: true, color: true } },
+        },
+      },
+    },
+  });
+
+  return certs.map((c) => ({
+    code: c.code,
+    issuedAt: c.issuedAt,
+    courseTitle: c.course.title,
+    courseSlug: c.course.slug,
+    thumbnailUrl: c.course.thumbnailUrl,
+    instructorName: c.course.instructor.user.name,
+    categoryName: c.course.category?.name ?? null,
+    categoryColor: c.course.category?.color ?? null,
+  }));
+}
+
+export type StudentCertificate = Awaited<ReturnType<typeof getStudentCertificates>>[number];
+
 /** Returns true when all published chapters of the course are completed by the user. */
 export async function isCourseCompleted(
   userId: string,
