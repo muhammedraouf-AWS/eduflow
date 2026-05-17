@@ -1,3 +1,5 @@
+export const revalidate = 900;
+
 import { CtaBanner } from "@/features/landing/components/cta-banner";
 import { CategoriesSection } from "@/features/landing/components/categories-section";
 import { FeaturedCourses } from "@/features/landing/components/featured-courses";

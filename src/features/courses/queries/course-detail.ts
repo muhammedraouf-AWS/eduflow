@@ -1,6 +1,8 @@
+import { cache } from "react";
+
 import { db } from "@/lib/db";
 
-export async function getCourseBySlug(slug: string) {
+export const getCourseBySlug = cache(async function getCourseBySlug(slug: string) {
   const course = await db.course.findUnique({
     where: { slug, status: "PUBLISHED" },
     select: {
@@ -68,7 +70,7 @@ export async function getCourseBySlug(slug: string) {
       totalStudents: instructorStudents,
     },
   };
-}
+});
 
 export async function getEnrollmentStatus(userId: string, courseId: string) {
   const enrollment = await db.enrollment.findUnique({

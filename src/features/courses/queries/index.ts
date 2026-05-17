@@ -1,3 +1,5 @@
+import { unstable_cache } from "next/cache";
+
 import type { CourseLevel } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 
@@ -76,17 +78,21 @@ export async function getCourses(filters: CoursesFilter = {}) {
   };
 }
 
-export async function getCourseFilterMeta() {
-  const categories = await db.category.findMany({
-    orderBy: { name: "asc" },
-    select: {
-      slug: true,
-      name: true,
-      color: true,
-      _count: { select: { courses: { where: { status: "PUBLISHED" } } } },
-    },
-  });
-  return { categories };
-}
+export const getCourseFilterMeta = unstable_cache(
+  async () => {
+    const categories = await db.category.findMany({
+      orderBy: { name: "asc" },
+      select: {
+        slug: true,
+        name: true,
+        color: true,
+        _count: { select: { courses: { where: { status: "PUBLISHED" } } } },
+      },
+    });
+    return { categories };
+  },
+  ["course-filter-meta"],
+  { revalidate: 3600, tags: ["categories"] },
+);
 
 export type CourseRow = Awaited<ReturnType<typeof getCourses>>["courses"][number];

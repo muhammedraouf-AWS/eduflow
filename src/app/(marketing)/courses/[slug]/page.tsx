@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
+import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { CourseCurriculum } from "@/features/courses/components/course-curriculum";
 import { CourseHero } from "@/features/courses/components/course-hero";
@@ -13,6 +14,16 @@ import {
   getEnrollmentStatus,
   getUserReview,
 } from "@/features/courses/queries/course-detail";
+
+export const revalidate = 3600;
+
+export async function generateStaticParams() {
+  const courses = await db.course.findMany({
+    where: { status: "PUBLISHED" },
+    select: { slug: true },
+  });
+  return courses.map(({ slug }) => ({ slug }));
+}
 
 interface PageProps {
   params: Promise<{ slug: string }>;
