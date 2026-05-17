@@ -13,10 +13,27 @@ export async function POST(req: Request) {
 
   const body = (await req.json()) as {
     courseId?: string;
-    type?: "thumbnail" | "video" | "attachment";
+    type?: "thumbnail" | "video" | "attachment" | "avatar";
     chapterId?: string;
   };
   const { courseId, type = "thumbnail", chapterId } = body;
+
+  // Avatar upload — no courseId needed, just a valid session
+  if (type === "avatar") {
+    const folder = cloudinaryFolders.userAvatar(session.user.id);
+    const timestamp = Math.round(Date.now() / 1000);
+    const signature = cloudinary.utils.api_sign_request(
+      { timestamp, folder },
+      env.CLOUDINARY_API_SECRET,
+    );
+    return NextResponse.json({
+      signature,
+      timestamp,
+      folder,
+      apiKey: env.CLOUDINARY_API_KEY,
+      cloudName: env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+    });
+  }
 
   if (!courseId) {
     return NextResponse.json({ error: "courseId is required" }, { status: 400 });
