@@ -4,19 +4,11 @@ import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/session";
+import { slugify } from "@/lib/slugify";
 import {
   createCourseSchema,
   updateCourseSchema,
 } from "@/features/instructor/validations/course";
-
-function slugify(title: string): string {
-  return title
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/[\s_-]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
 
 async function getProfile(userId: string) {
   return db.instructorProfile.findUnique({
