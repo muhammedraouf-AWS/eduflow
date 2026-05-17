@@ -22,11 +22,15 @@ interface CloudinaryUploadResult {
 
 interface AvatarUploaderProps {
   currentUrl: string | null;
+  userImage: string | null;
   name: string | null;
 }
 
-export function AvatarUploader({ currentUrl, name }: AvatarUploaderProps) {
+export function AvatarUploader({ currentUrl, userImage, name }: AvatarUploaderProps) {
   const [preview, setPreview] = useState<string | null>(currentUrl);
+
+  // Resolved display: custom upload → OAuth photo → null (shows initials)
+  const displaySrc = preview ?? userImage;
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -99,8 +103,8 @@ export function AvatarUploader({ currentUrl, name }: AvatarUploaderProps) {
     <div className="flex items-center gap-5">
       {/* Avatar circle */}
       <div className="relative size-24 shrink-0 overflow-hidden rounded-full border-2 border-border bg-muted">
-        {preview ? (
-          <Image src={preview} alt="Avatar" fill sizes="96px" className="object-cover" />
+        {displaySrc ? (
+          <Image src={displaySrc} alt="Avatar" fill sizes="96px" className="object-cover" />
         ) : (
           <div className="flex size-full items-center justify-center">
             {name ? (
@@ -132,6 +136,7 @@ export function AvatarUploader({ currentUrl, name }: AvatarUploaderProps) {
             {preview ? "Change photo" : "Upload photo"}
           </Button>
 
+          {/* Only show Remove when a custom upload exists — not for OAuth fallback */}
           {preview && (
             <Button
               type="button"

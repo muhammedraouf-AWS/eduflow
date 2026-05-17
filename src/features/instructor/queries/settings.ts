@@ -4,7 +4,7 @@ export async function getInstructorProfileSettings(userId: string) {
   const [user, profile] = await Promise.all([
     db.user.findUnique({
       where: { id: userId },
-      select: { id: true, name: true, email: true },
+      select: { id: true, name: true, email: true, image: true },
     }),
     db.instructorProfile.findUnique({
       where: { userId },

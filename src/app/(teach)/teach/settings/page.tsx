@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { requireRole } from "@/lib/session";
+import { requireAuth } from "@/lib/session";
 import { getInstructorProfileSettings } from "@/features/instructor/queries/settings";
 import { AvatarUploader } from "@/features/instructor/components/avatar-uploader";
 import { ProfileSettingsForm } from "@/features/instructor/components/profile-settings-form";
@@ -8,7 +8,7 @@ import { ProfileSettingsForm } from "@/features/instructor/components/profile-se
 export const metadata = { title: "Profile Settings — EduFlow" };
 
 export default async function SettingsPage() {
-  const user = await requireRole("INSTRUCTOR");
+  const user = await requireAuth();
   const data = await getInstructorProfileSettings(user.id);
   if (!data) notFound();
 
@@ -25,7 +25,11 @@ export default async function SettingsPage() {
       {/* Avatar */}
       <section className="rounded-xl border bg-card p-6 space-y-4">
         <h2 className="text-base font-semibold">Photo</h2>
-        <AvatarUploader currentUrl={data.profile.avatarUrl} name={data.user.name} />
+        <AvatarUploader
+          currentUrl={data.profile.avatarUrl}
+          userImage={data.user.image}
+          name={data.user.name}
+        />
       </section>
 
       {/* Profile form */}
