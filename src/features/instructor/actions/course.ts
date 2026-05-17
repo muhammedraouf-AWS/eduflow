@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
+import { requireAuth } from "@/lib/session";
 import {
   createCourseSchema,
   updateCourseSchema,
@@ -28,8 +28,7 @@ async function getProfile(userId: string) {
 export async function createCourseAction(
   input: unknown,
 ): Promise<{ error: string } | { courseId: string }> {
-  const user = await getCurrentUser();
-  if (!user) return { error: "Not authenticated" };
+  const user = await requireAuth();
   if (user.role !== "INSTRUCTOR" && user.role !== "ADMIN") {
     return { error: "Forbidden" };
   }
@@ -60,8 +59,7 @@ export async function updateCourseAction(
   courseId: string,
   input: unknown,
 ): Promise<{ error: string } | { success: true }> {
-  const user = await getCurrentUser();
-  if (!user) return { error: "Not authenticated" };
+  const user = await requireAuth();
 
   const parsed = updateCourseSchema.safeParse(input);
   if (!parsed.success) {
@@ -96,8 +94,7 @@ export async function updateCourseAction(
 export async function togglePublishAction(
   courseId: string,
 ): Promise<{ error: string } | { success: true }> {
-  const user = await getCurrentUser();
-  if (!user) return { error: "Not authenticated" };
+  const user = await requireAuth();
 
   const profile = await getProfile(user.id);
   if (!profile) return { error: "Instructor profile not found" };
@@ -127,8 +124,7 @@ export async function togglePublishAction(
 export async function deleteCourseAction(
   courseId: string,
 ): Promise<{ error: string } | { success: true }> {
-  const user = await getCurrentUser();
-  if (!user) return { error: "Not authenticated" };
+  const user = await requireAuth();
 
   const profile = await getProfile(user.id);
   if (!profile) return { error: "Instructor profile not found" };

@@ -12,6 +12,9 @@ import {
 } from "@/features/auth/validations";
 import { db } from "@/lib/db";
 
+const MAX_LOGIN_ATTEMPTS = 10;
+const LOCK_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+
 export async function loginFormAction(
   formData: FormData,
 ): Promise<{ error: string } | { redirectTo: string }> {
@@ -26,10 +29,18 @@ export async function loginFormAction(
 
   const account = await db.user.findUnique({
     where: { email: parsed.data.email },
-    select: { suspended: true },
+    select: { id: true, suspended: true, loginAttempts: true, lockedUntil: true },
   });
+
   if (account?.suspended) {
     return { error: "Your account has been suspended. Please contact support." };
+  }
+
+  if (account?.lockedUntil && account.lockedUntil > new Date()) {
+    const minutes = Math.ceil((account.lockedUntil.getTime() - Date.now()) / 60_000);
+    return {
+      error: `Too many failed attempts. Try again in ${minutes} minute${minutes !== 1 ? "s" : ""}.`,
+    };
   }
 
   try {
@@ -38,13 +49,39 @@ export async function loginFormAction(
       password: parsed.data.password,
       redirectTo: callbackUrl,
     });
+    // Reset on success (non-redirect path — rare, but handle it)
+    if (account?.id) {
+      await db.user.update({
+        where: { id: account.id },
+        data: { loginAttempts: 0, lockedUntil: null },
+      });
+    }
     return { redirectTo: callbackUrl };
   } catch (error) {
     if (isRedirectError(error)) {
-      // signIn succeeded — session created, cookie set
+      // signIn succeeded — session created, reset failure counter
+      if (account?.id && (account.loginAttempts ?? 0) > 0) {
+        db.user
+          .update({ where: { id: account.id }, data: { loginAttempts: 0, lockedUntil: null } })
+          .catch(() => {});
+      }
       return { redirectTo: callbackUrl };
     }
     if (error instanceof AuthError) {
+      if (error.type === "CredentialsSignin" && account?.id) {
+        const newAttempts = (account.loginAttempts ?? 0) + 1;
+        const shouldLock = newAttempts >= MAX_LOGIN_ATTEMPTS;
+        await db.user.update({
+          where: { id: account.id },
+          data: {
+            loginAttempts: newAttempts,
+            ...(shouldLock ? { lockedUntil: new Date(Date.now() + LOCK_DURATION_MS) } : {}),
+          },
+        });
+        if (shouldLock) {
+          return { error: `Too many failed attempts. Your account is locked for 15 minutes.` };
+        }
+      }
       switch (error.type) {
         case "CredentialsSignin":
           return { error: "Invalid email or password" };

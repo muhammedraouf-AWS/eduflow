@@ -1,14 +1,13 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
+import { requireAuth } from "@/lib/session";
 import { applicationSchema } from "@/features/instructor/validations/application";
 
 export async function applyInstructorAction(
   formData: FormData,
 ): Promise<{ success: true } | { error: string }> {
-  const user = await getCurrentUser();
-  if (!user) return { error: "Not authenticated." };
+  const user = await requireAuth();
   if (user.role !== "STUDENT") return { error: "Only students can apply." };
 
   const parsed = applicationSchema.safeParse({

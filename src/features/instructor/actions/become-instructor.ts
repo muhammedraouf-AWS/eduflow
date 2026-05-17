@@ -2,14 +2,13 @@
 
 import { updateSession } from "@/auth";
 import { db } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
+import { requireAuth } from "@/lib/session";
 
 export async function becomeInstructorAction(): Promise<
   { error: string } | { redirectTo: string }
 > {
-  const user = await getCurrentUser();
+  const user = await requireAuth();
 
-  if (!user) return { error: "Not authenticated" };
   if (user.role !== "STUDENT") return { error: "Already an instructor" };
 
   await db.$transaction([

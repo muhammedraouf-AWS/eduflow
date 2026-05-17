@@ -3,11 +3,10 @@
 import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
+import { requireAuth } from "@/lib/session";
 
 export async function enrollAction(courseId: string, courseSlug: string) {
-  const user = await getCurrentUser();
-  if (!user) redirect(`/login?callbackUrl=/courses/${courseSlug}`);
+  const user = await requireAuth();
 
   const course = await db.course.findUnique({
     where: { id: courseId, status: "PUBLISHED" },
