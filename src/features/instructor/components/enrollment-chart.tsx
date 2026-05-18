@@ -27,27 +27,35 @@ export function EnrollmentChart({
       </div>
 
       {/* Bar chart */}
-      <div className="flex h-28 items-end gap-px">
-        {trend.map((day) => {
-          const heightPct = (day.count / max) * 100;
-          return (
-            <div
-              key={day.date}
-              title={`${day.count} enrollment${day.count !== 1 ? "s" : ""} on ${formatAxisLabel(day.date)}`}
-              className="group relative flex flex-1 flex-col items-center justify-end"
-            >
-              <div
-                style={{ height: `${Math.max(heightPct, day.count > 0 ? 4 : 1)}%` }}
-                className={`w-full rounded-sm transition-colors ${
-                  day.count > 0
-                    ? "bg-primary/60 group-hover:bg-primary"
-                    : "bg-muted"
-                }`}
-              />
-            </div>
-          );
-        })}
-      </div>
+      {total === 0 ? (
+        <div className="flex h-28 items-center justify-center rounded-lg border border-dashed">
+          <p className="text-xs text-muted-foreground">No enrollments in the last 30 days</p>
+        </div>
+      ) : (
+        <div className="relative">
+          {/* Baseline */}
+          <div className="absolute bottom-0 left-0 right-0 h-px bg-border" />
+          <div className="flex h-28 items-end gap-px pb-px">
+            {trend.map((day) => {
+              const heightPct = (day.count / max) * 100;
+              return (
+                <div
+                  key={day.date}
+                  title={`${day.count} enrollment${day.count !== 1 ? "s" : ""} on ${formatAxisLabel(day.date)}`}
+                  className="group relative flex flex-1 flex-col items-center justify-end"
+                >
+                  {day.count > 0 && (
+                    <div
+                      style={{ height: `${Math.max(heightPct, 6)}%` }}
+                      className="w-full rounded-t-sm bg-primary/70 transition-colors group-hover:bg-primary"
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* X-axis: show label every ~7 days */}
       <div className="mt-1.5 flex">

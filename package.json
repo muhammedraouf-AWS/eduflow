@@ -19,6 +19,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:seed-extra": "tsx prisma/seed-extra.ts",
     "db:backfill-purchases": "tsx prisma/backfill-purchases.ts",
+    "db:randomize-dates": "tsx prisma/randomize-dates.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:unit": "vitest run src/features/auth/validations src/features/instructor/validations src/lib/utils.test.ts src/lib/slugify",
