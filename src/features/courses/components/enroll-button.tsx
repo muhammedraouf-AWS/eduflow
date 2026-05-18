@@ -46,8 +46,8 @@ export function EnrollButton({
 
   if (price !== null) {
     return (
-      <Button size="lg" className="w-full" disabled>
-        Buy for ${Number(price).toFixed(2)} — coming soon
+      <Button size="lg" className="w-full" nativeButton={false} render={<Link href={`/checkout/${courseId}`} />}>
+        Buy for ${Number(price).toFixed(2)}
       </Button>
     );
   }
